@@ -9,6 +9,7 @@ cd $1
 git fetch origin stable
 git checkout stable
 git checkout -b $1
+git push origin $1
 
 cp ../ej/app/config/parameters.ini app/config/
 
