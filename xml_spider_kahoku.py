@@ -1,6 +1,7 @@
 from scrapy.spider import BaseSpider
 from scrapy.selector import XmlXPathSelector
 from scrapy.http import Request
+import datetime
 
 # this script uses the scrapy framework: http://scrapy.org/
 
@@ -36,12 +37,14 @@ class XmlSpider(BaseSpider):
       #### media_type ####
       #### layer_type ####
       # child_items_count 
+      #### published #####
       ####################
       media_creator_username = 'Kahoku Simpo Publishing Co.'
       archive = "Kahoku Shimpo Disasters Archive"
       media_type = "Image"
       layer_type = "Image" 
-      child_items_count = 0
+      child_items_count = '0'
+      published = '1'
 
       ####################
       # media_date_created
@@ -105,15 +108,19 @@ class XmlSpider(BaseSpider):
         location = location[:-1]
       # print "**********location*************: ", location
 
-
-      json_entry = '{"title": "' + abstract[0] + '", "uri": "' 
-      # print "*********json_entry*******", json_entry
-      # + uri[0] + '", "attribution_uri": "' 
-      # + uri[0] + '", "media_creator_username": "' 
-      # + media_creator_username + '", "thumbnail_url": "' 
-      # + thumbnail_url[0] + "location": "' 
-      # + location + '", "tags": [' 
-      # + tags_string + '], "archive":"Yahoo! Japan", "media_type": "Image", "layer_type": "Image", "child_items_count":0, "published":1}, '
+      json_entry = ( '{"title": "' + abstract[0] + '", "uri": "' 
+        + uri + '", "attribution_uri": "' 
+        + attribution_uri + '", "media_creator_username": "' 
+        + media_creator_username + '", "thumbnail_url": "' 
+        + thumbnail_url + '"location": "' 
+        + location + '", "tags": [' 
+        + tags_string + '], "archive": "' 
+        + archive + '",  "media_type": "'
+        + media_type + '", "layer_type": "'
+        + layer_type + '", "child_items_count": "'
+        + child_items_count + '", "published": "'
+        + published + '"}, '
+      )
 
       jsons.append(json_entry)
 
