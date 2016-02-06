@@ -1,11 +1,6 @@
 from scrapy.spider import BaseSpider
 from scrapy.selector import XmlXPathSelector
 from scrapy.http import Request
-import datetime
-
-# this script uses the scrapy framework: http://scrapy.org/
-
-# from xmlscrape.items import XmlscrapeItem
 
 class XmlSpider(BaseSpider):
   name = "xmlscrape"
@@ -75,6 +70,7 @@ class XmlSpider(BaseSpider):
       ####################
       tags = item.select('Resource/subject/Description/value/text()').extract()
       # print "**********tags*************: ", tags[0]
+      tags = self.handleNull(tags)
       tags_string = '"' + '", "'.join(tags) + '"'
 
       ####################
@@ -112,7 +108,7 @@ class XmlSpider(BaseSpider):
         + uri + '", "attribution_uri": "' 
         + attribution_uri + '", "media_creator_username": "' 
         + media_creator_username + '", "thumbnail_url": "' 
-        + thumbnail_url + '"location": "' 
+        + thumbnail_url + '", "location": "' 
         + location + '", "tags": [' 
         + tags_string + '], "archive": "' 
         + archive + '",  "media_type": "'
@@ -130,6 +126,5 @@ class XmlSpider(BaseSpider):
       open('last.txt', 'wb').write(''.join(jsons).encode("UTF-8"))
     else:
       nextFileLink = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=" + resumptionToken[0].encode('ascii')
-      # OLD nextFileLink = "http://search.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&resumptionToken=" + resumptionToken[0].encode('ascii')
       open(resumptionToken[0].encode('ascii') + '.txt', 'wb').write(''.join(jsons).encode("UTF-8"))
     yield Request(nextFileLink, callback = self.parse)
