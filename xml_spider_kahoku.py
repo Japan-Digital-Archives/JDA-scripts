@@ -30,23 +30,40 @@ class XmlSpider(BaseSpider):
     jsons = []
 
     for item in items:
+      ####################
+      ##### creator ######
+      ##### archive ######
+      #### media_type ####
+      #### layer_type ####
+      # child_items_count 
+      ####################
       media_creator_username = 'Kahoku Simpo Publishing Co.'
-      # print "**********creator*************: ", creator
+      archive = "Kahoku Shimpo Disasters Archive"
+      media_type = "Image"
+      layer_type = "Image" 
+      child_items_count = 0
 
-      title = item.select('Resource/title/text()').extract() # seems to be the same for everything ... so i'm using abstract instead which seems to change
+      ####################
+      # media_date_created
+      ####################
+      media_date_created = item.select('Resource/created/text()').extract()
+      media_date_created = self.handleNull(media_date_created)
+      # print media_date_created
+
+      ####################
+      ###### abstract ####
+      ####################
+      # title = item.select('Resource/title/text()').extract() # seems to be the same for everything ... so i'm using abstract instead which seems to change
       abstract = item.select('Resource/abstract/text()').extract()
+      abstract = self.handleNull(abstract)
       # print "*****************abstract ", abstract[0]
-      # print "**********titel*************: ", title[0]
 
       ####################
       ####### URI ######## 
       ####################
       uri = item.select('Resource/screen/Image/@rdf:about').extract()
+      uri = self.handleNull(uri)
       attribution_uri = uri
-      if not uri:
-        uri = ''
-      else:
-        uri[0] = ''
       # print "**********uri*************: ", uri[0]
       # print "**********attribution_uri*************: ", attribution_uri[0]
 
@@ -57,11 +74,11 @@ class XmlSpider(BaseSpider):
       # print "**********tags*************: ", tags[0]
       tags_string = '"' + '", "'.join(tags) + '"'
 
-
       ####################
       #### Thumbnail ##### 
       ####################
       thumbnail_url = item.select('Resource/thumbnail/Image/@rdf:about').extract()
+      thumbnail_url = self.handleNull(thumbnail_url)
       # print "**********thumbnail*************: ", thumbnail
 
       ####################
@@ -86,8 +103,7 @@ class XmlSpider(BaseSpider):
             location = location + ", " + item
       if location[location.__len__()-1] is ',':
         location = location[:-1]
-
-      print "**********location*************: ", location
+      # print "**********location*************: ", location
 
 
       json_entry = '{"title": "' + abstract[0] + '", "uri": "' 
