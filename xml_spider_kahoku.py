@@ -127,11 +127,10 @@ class XmlSpider(BaseSpider):
       jsons.append(json_entry)
 
     resumptionToken = x.select('//resumptionToken/text()').extract()
+    nextFileLink = ''
     if resumptionToken == []:
-      nextFileLink = ''
       open('last.txt', 'wb').write(''.join(jsons).encode("UTF-8"))
     else:
-      nextFileLink = ''
       nextFileLink = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=" + resumptionToken[0].encode('ascii')
       open(resumptionToken[0].encode('ascii') + '.txt', 'wb').write(''.join(jsons).encode("UTF-8"))
     yield Request(nextFileLink, callback = self.parse)
