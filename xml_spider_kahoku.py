@@ -5,9 +5,9 @@ from scrapy.http import Request
 class XmlSpider(BaseSpider):
   name = "xmlscrape"
   allowed_domains = ["kahoku-archive.shinrokuden.irides.tohoku.ac.jp"]
-    # "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE"
+    # "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE" #start scraping using this url
   start_urls = [
-    "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=5WR5-HYweU6yQfHFWgiqTw"
+    "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=5xum7v4o7-1B1JcK6WfGFg"
   ]
 
   def handleNull(self, field):
@@ -19,19 +19,14 @@ class XmlSpider(BaseSpider):
 
   def parse(self, response):
     x = XmlXPathSelector(response)
-    # y = XmlXPathSelector(response)
-    # y.remove_namespaces()
     x.remove_namespaces()
     x.register_namespace("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
     items = []
     items = x.select('//record/metadata/RDF')
-    # itemsY = y.select('//record/header/@status')
-    # print '**************** ', itemsY
 
     jsons = []
     num = 0
 
-    # maybe the problem is just the number of item
     for item in items:
       ####################
       ##### creator ######
@@ -87,8 +82,7 @@ class XmlSpider(BaseSpider):
       ####################
       thumbnail_url = item.select('Resource/thumbnail/Image/@rdf:about').extract()
       thumbnail_url = self.handleNull(thumbnail_url)
-      print "**********thumbnail*************: ", thumbnail_url
-      print '^ thumbnail before death'
+      # print "**********thumbnail*************: ", thumbnail_url
 
       ####################
       ##### Location ##### 
@@ -103,16 +97,18 @@ class XmlSpider(BaseSpider):
         locationTemp = [street_address, locality, region]
         location = ''
 
-      # This handles comma location and existence issues
-      for item in locationTemp:
-        if item:
-          if location is '':
-            location = location + item
-          else:
-            location = location + ", " + item
-      if location[location.__len__()-1] is ',':
-        location = location[:-1]
-      # print "**********location*************: ", location
+        # This handles comma location and existence issues
+        for item in locationTemp:
+          if item:
+            if location is '':
+              location = location + item
+            else:
+              location = location + ", " + item
+        if location[location.__len__()-1] is ',':
+          location = location[:-1]
+        # print "**********location*************: ", location
+      else:
+        location = ''
 
       json_entry = ( '{"title": "' 
         + abstract + '", "uri": "' 
@@ -135,6 +131,7 @@ class XmlSpider(BaseSpider):
       nextFileLink = ''
       open('last.txt', 'wb').write(''.join(jsons).encode("UTF-8"))
     else:
+      nextFileLink = ''
       nextFileLink = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=" + resumptionToken[0].encode('ascii')
       open(resumptionToken[0].encode('ascii') + '.txt', 'wb').write(''.join(jsons).encode("UTF-8"))
     yield Request(nextFileLink, callback = self.parse)
