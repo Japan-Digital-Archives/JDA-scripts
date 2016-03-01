@@ -1,3 +1,10 @@
+#################################################
+# This script is for scraping the contents of the 
+# Kahoku Shimpo Disaster Archive. Run it with
+# '$ scrapy runspider xml_spider_kahoku.py'
+#################################################
+
+
 from scrapy.spider import BaseSpider
 from scrapy.selector import XmlXPathSelector
 from scrapy.http import Request
@@ -33,7 +40,7 @@ class XmlSpider(BaseSpider):
       #### media_type ####
       #### layer_type ####
       ####################
-      media_creator_username = 'Kahoku Simpo Publishing Co.'
+      media_creator_username = 'Kahoku Shimpo Publishing Co.'
       archive = "Kahoku Shimpo Disasters Archive"
       media_type = "Image"
       layer_type = "Image" 
