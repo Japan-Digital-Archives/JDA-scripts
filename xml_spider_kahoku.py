@@ -5,8 +5,6 @@ from scrapy.http import Request
 class XmlSpider(BaseSpider):
   name = "xmlscrape"
   allowed_domains = ["kahoku-archive.shinrokuden.irides.tohoku.ac.jp"]
-    # "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE" #start scraping using this url
-    # "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=5xum7v4o7-1B1JcK6WfGFg"
   start_urls = [ 
   "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE" 
   ]
