@@ -6,8 +6,9 @@ class XmlSpider(BaseSpider):
   name = "xmlscrape"
   allowed_domains = ["kahoku-archive.shinrokuden.irides.tohoku.ac.jp"]
     # "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE" #start scraping using this url
-  start_urls = [
-    "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=5xum7v4o7-1B1JcK6WfGFg"
+    # "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=5xum7v4o7-1B1JcK6WfGFg"
+  start_urls = [ 
+  "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE" 
   ]
 
   def handleNull(self, field):
@@ -63,7 +64,7 @@ class XmlSpider(BaseSpider):
       # print "**********uri*************: ", uri
 
       ####################
-      ####### URI ######## 
+      ##### Att URI ###### 
       ####################
       attribution_uri = item.select('Resource/@rdf:about').extract()
       attribution_uri = self.handleNull(attribution_uri)
@@ -73,9 +74,11 @@ class XmlSpider(BaseSpider):
       ####### Tags ####### 
       ####################
       tags = item.select('Resource/subject/Description/value/text()').extract()
-      tags = self.handleNull(tags)
-      # print "**********tags*************: ", tags
-      tags_string = '"' + '", "'.join(tags) + '"'
+      if not tags:
+        tags_string = '[]'
+      else:
+        tags_string = '"' + '", "'.join(tags) + '"'
+      # print "********tags_string**********: ", tags_string
 
       ####################
       #### Thumbnail ##### 
@@ -129,8 +132,8 @@ class XmlSpider(BaseSpider):
     resumptionToken = x.select('//resumptionToken/text()').extract()
     nextFileLink = ''
     if resumptionToken == []:
-      open('last.txt', 'wb').write(''.join(jsons).encode("UTF-8"))
+      open('last.json', 'wb').write(''.join(jsons).encode("UTF-8"))
     else:
       nextFileLink = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=" + resumptionToken[0].encode('ascii')
-      open(resumptionToken[0].encode('ascii') + '.txt', 'wb').write(''.join(jsons).encode("UTF-8"))
+      open(resumptionToken[0].encode('ascii') + '.json', 'wb').write(''.join(jsons).encode("UTF-8"))
     yield Request(nextFileLink, callback = self.parse)
