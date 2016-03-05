@@ -1,7 +1,7 @@
 #################################################
-# This script is for scraping the contents of the 
+# This script is for scraping the MOVIE contents of the 
 # Kahoku Shimpo Disaster Archive. Run it with
-# '$ scrapy runspider xml_spider_kahoku.py'
+# '$ scrapy runspider xml_spider_kahoku_MOVIE.py'
 #################################################
 
 
@@ -13,7 +13,7 @@ class XmlSpider(BaseSpider):
   name = "xmlscrape"
   allowed_domains = ["kahoku-archive.shinrokuden.irides.tohoku.ac.jp"]
   start_urls = [ 
-  "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE" 
+  "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=MOVIE" 
   ]
 
   def handleNull(self, field):
