@@ -42,7 +42,7 @@ class XmlSpider(BaseSpider):
       ####################
       media_creator_username = 'Kahoku Shimpo Publishing Co.'
       archive = "Kahoku Shimpo Disasters Archive"
-      media_type = "Image"
+      media_type = "Video"
       layer_type = "Image" 
 
       ####################
@@ -53,9 +53,16 @@ class XmlSpider(BaseSpider):
       # print media_date_created
 
       ####################
+      ###### title #######
+      ####################
+      title = item.select('Resource/title/text()').extract()
+      title = self.handleNull(title)
+      title = title.replace("\r\n", "")
+      # print "*****************title ", title
+
+      ####################
       ###### abstract ####
       ####################
-      # title = item.select('Resource/title/text()').extract() # seems to be the same for everything ... so i'm using abstract instead which seems to change
       abstract = item.select('Resource/abstract/text()').extract()
       abstract = self.handleNull(abstract)
       abstract = abstract.replace("\r\n", "")
@@ -64,7 +71,7 @@ class XmlSpider(BaseSpider):
       ####################
       ####### URI ######## 
       ####################
-      uri = item.select('Resource/screen/Image/@rdf:about').extract()
+      uri = item.select('Resource/ogg/Image/@rdf:about').extract()
       uri = self.handleNull(uri)
       # print "**********uri*************: ", uri
 
@@ -119,6 +126,7 @@ class XmlSpider(BaseSpider):
         location = ''
 
       json_entry = ( '{"title": "' 
+        + title + '", "description": "' 
         + abstract + '", "uri": "' 
         + uri + '", "attribution_uri": "' 
         + attribution_uri + '", "media_creator_username": "' 
