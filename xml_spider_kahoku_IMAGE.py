@@ -114,14 +114,16 @@ class XmlSpider(BaseSpider):
               location = location + ", " + item
         if location[location.__len__()-1] is ',':
           location = location[:-1]
-        # print "**********location*************: ", location
+        print "**********location*************: ", location
       else:
         location = ''
+        print "**********location*************: ", location
 
       json_entry = ( '{"title": "' 
         + abstract + '", "uri": "' 
         + uri + '", "attribution_uri": "' 
-        + attribution_uri + '", "media_creator_username": "' 
+        + attribution_uri + '", "media_date_created": "' 
+        + media_date_created + '", "media_creator_username": "' 
         + media_creator_username + '", "thumbnail_url": "' 
         + thumbnail_url + '", "location": "' 
         + location + '", "tags": [' 
