@@ -124,15 +124,40 @@ class XmlSpider(BaseSpider):
         # print "**********location*************: ", location
       else:
         location = ''
+        # print "**********location*************: ", location
+
+      ##########################
+      ######## Lat/Long ########
+      # GEOCODE using location # 
+      # information and google # 
+      # maps API               #
+      # made using Alex H's    #
+      # account for expediency #
+      ##########################
+      if location != '':
+        KEY = '&key=AIzaSyCGF2BwNPNckrbx6L2tQRATBcjKv0C3xCo'
+        GOOGLE_URI = 'https://maps.googleapis.com/maps/api/geocode/json?address=' 
+        location_encoded = location.encode('utf8')
+        location_url_ready = urllib.quote_plus(location_encoded, safe='')
+        request_uri = GOOGLE_URI + location_url_ready + KEY
+        with contextlib.closing(urllib.urlopen(request_uri)) as response:
+          data = json.load(response)
+          if data != '':
+            lat = json.dumps(data['results'][0]['geometry']['location']['lat'])
+            lng = json.dumps(data['results'][0]['geometry']['location']['lng'])
+          else:
+            lat = 'null' 
+            ln = 'null'
 
       json_entry = ( '{"title": "' 
-        + title + '", "description": "' 
         + abstract + '", "uri": "' 
         + uri + '", "attribution_uri": "' 
         + attribution_uri + '", "media_date_created": "' 
         + media_date_created + '", "media_creator_username": "' 
         + media_creator_username + '", "thumbnail_url": "' 
-        + thumbnail_url + '", "location": "' 
+        + thumbnail_url + '", "lat": "' 
+        + lat + '", "lng: "' 
+        + lng + '", "location": "' 
         + location + '", "tags": [' 
         + tags_string + '], "archive": "' 
         + archive + '",  "media_type": "'

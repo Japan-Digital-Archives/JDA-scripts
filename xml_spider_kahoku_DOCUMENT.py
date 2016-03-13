@@ -1,5 +1,5 @@
 #################################################
-# This script is for scraping the IMAGE contents of the 
+# This script is for scraping the DOCUMENT contents of the 
 # Kahoku Shimpo Disaster Archive. Run it with
 # '$ scrapy runspider xml_spider_kahoku_IMAGE.py'
 #################################################
@@ -8,7 +8,6 @@
 from scrapy.spider import BaseSpider
 from scrapy.selector import XmlXPathSelector
 from scrapy.http import Request
-import urllib, json, contextlib
 
 class XmlSpider(BaseSpider):
   name = "xmlscrape"
@@ -150,7 +149,7 @@ class XmlSpider(BaseSpider):
         + media_date_created + '", "media_creator_username": "' 
         + media_creator_username + '", "thumbnail_url": "' 
         + thumbnail_url + '", "lat": "' 
-        + lat + '", "lng": "' 
+        + lat + '", "lng: "' 
         + lng + '", "location": "' 
         + location + '", "tags": [' 
         + tags_string + '], "archive": "' 
