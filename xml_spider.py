@@ -4,6 +4,8 @@ from scrapy.http import Request
 
 # this script uses the scrapy framework: http://scrapy.org/
 
+# i think this is scrapy 0.16 
+
 from xmlscrape.items import XmlscrapeItem
 
 class XmlSpider(BaseSpider):
