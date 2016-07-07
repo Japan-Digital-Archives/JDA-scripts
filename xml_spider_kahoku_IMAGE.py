@@ -14,8 +14,9 @@ class XmlSpider(BaseSpider):
   name = "xmlscrape"
   allowed_domains = ["kahoku-archive.shinrokuden.irides.tohoku.ac.jp"]
   start_urls = [ 
-  "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE" 
+  "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=DbSTB68T6CHrhGAmUohnNA"
   ]
+  # "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE" 
 
   def handleNull(self, field):
     if not field:
@@ -64,17 +65,20 @@ class XmlSpider(BaseSpider):
 
       ####################
       ####### URI ######## 
+      # is image and is  #
+      # set equal to att #
+      # uri.. convention #
       ####################
       uri = item.select('Resource/screen/Image/@rdf:about').extract()
       uri = self.handleNull(uri)
       # print "**********uri*************: ", uri
 
       ####################
-      ##### Att URI ###### 
+      ###### source ###### 
       ####################
-      attribution_uri = item.select('Resource/@rdf:about').extract()
-      attribution_uri = self.handleNull(attribution_uri)
-      # print "**********attribution_uri*************: ", attribution_uri
+      source = item.select('Resource/@rdf:about').extract()
+      source = self.handleNull(source)
+      # print "**********source*************: ", source
 
       ####################
       ####### Tags ####### 
@@ -128,6 +132,8 @@ class XmlSpider(BaseSpider):
       # made using Alex H's    #
       # account for expediency #
       ##########################
+      lat = '' 
+      lng = ''
       if location != '':
         KEY = '&key=AIzaSyCGF2BwNPNckrbx6L2tQRATBcjKv0C3xCo'
         GOOGLE_URI = 'https://maps.googleapis.com/maps/api/geocode/json?address=' 
@@ -136,22 +142,22 @@ class XmlSpider(BaseSpider):
         request_uri = GOOGLE_URI + location_url_ready + KEY
         with contextlib.closing(urllib.urlopen(request_uri)) as response:
           data = json.load(response)
-          if data != '':
+          if json.dumps(data['results']) != '[]':
             lat = json.dumps(data['results'][0]['geometry']['location']['lat'])
             lng = json.dumps(data['results'][0]['geometry']['location']['lng'])
           else:
             lat = 'null' 
-            ln = 'null'
+            lng = 'null'
 
       json_entry = ( '{"title": "' 
         + abstract + '", "uri": "' 
         + uri + '", "attribution_uri": "' 
-        + attribution_uri + '", "media_date_created": "' 
+        + uri + '", "media_date_created": "' 
         + media_date_created + '", "media_creator_username": "' 
         + media_creator_username + '", "thumbnail_url": "' 
-        + thumbnail_url + '", "lat": "' 
-        + media_geo_latitude + '", "lng": "' 
-        + media_geo_longitude + '", "location": "' 
+        + thumbnail_url + '", "media_geo_latitude": "' 
+        + lat + '", "media_geo_longitude": "' 
+        + lng + '", "location": "' 
         + location + '", "tags": [' 
         + tags_string + '], "archive": "' 
         + archive + '",  "media_type": "'
