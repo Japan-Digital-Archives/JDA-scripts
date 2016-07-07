@@ -4,6 +4,9 @@ from scrapy.http import Request
 
 # this script uses the scrapy framework: http://scrapy.org/
 
+# i think this is scrapy 0.16
+# you will need to change the filename to just xml_spider.py to run scrapy properly
+
 from xmlscrape.items import XmlscrapeItem
 
 class XmlSpider(BaseSpider):
