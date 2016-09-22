@@ -1,0 +1,6 @@
+#!/bin/bash
+
+DATE=`date +%Y-%m-%d:%H:%M:%S`
+FILENAME="ASAHI_"$DATE".xml"
+PATHF="/var/www/alex/asahi_rss_test/feed/"$FILENAME
+curl http://www3.asahi.com/xml/portal/Disaster.xml -o $PATHF
