@@ -20,5 +20,5 @@ Start another cron job that processes the resulting `*.xml` feed, converting it 
 ### Some Notes
 - Both `jsonifyFeed.py` and `subscribeToFeed` expect the same `PATH` location, the included `feed/` directory. The `PATH` variable should be set in both files respectively. 
 - `jsonifyFeed.py` will delete the `xml` files after processing them. 
-- `jsonifyFeed.py` will download a `jpg` image into the `PATH` dir. The `thumbnail_uri` field already indicates their location on AWS's S3, but the images still need to uploaded. This could/should obviously be automated.
+- `jsonifyFeed.py` will download a `jpg` image into the `PATH` dir. The `thumbnail_uri` field already indicates its location on AWS's S3, but the images still need to uploaded. This could/should obviously be automated. [Here](https://github.com/Japan-Digital-Archives/scripts/wiki/Asahi-Asia-&-Japan-Watch-Import-Notes) is reference to how the JDA currently handles these uploads.
 - `jsonifyFeed.py` uses an items asahi assigned id as a foreign key - so eliminating duplicates and file names.
