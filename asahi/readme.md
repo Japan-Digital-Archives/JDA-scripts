@@ -6,7 +6,7 @@ $ crontab -e
 ```
 
 ### Subscribe
-Start a cron job that curls the Asahi RSS feed using `subscribeToFeed` every 5 minutes. This is the interval on which the RSS feed is refreshed. In my experience Asahi only publishes around 5-20 items per month so this is overkill and could be adjusted
+Start a cron job that curls the Asahi RSS feed using `subscribeToFeed` every 5 minutes. This is the interval on which the RSS feed is refreshed. In my experience Asahi only publishes around 5-20 items per month so this is overkill and could be adjusted.
 ```
 */5 * * * * /var/www/alex/asahi_rss_test/subscribeToFeed
 ```
@@ -18,7 +18,7 @@ Start another cron job that processes the resulting `*.xml` feed, converting it 
 ```
 
 ### Some Notes
-- Both `jsonifyFeed.py` and `subscribeToFeed` expect the same `PATH` location, the included `feed/` directory. The `PATH` variable should be set in both files respectively. 
+- Both `jsonifyFeed.py` and `subscribeToFeed` expect the same `PATH` location: the included `feed/` directory. The `PATH` variable should be set in both files respectively. 
 - `jsonifyFeed.py` will delete the `xml` files after processing them. 
 - `jsonifyFeed.py` will download a `jpg` image into the `PATH` dir. The `thumbnail_uri` field already indicates its location on AWS's S3, but the images still need to uploaded. This could/should obviously be automated. [Here](https://github.com/Japan-Digital-Archives/scripts/wiki/Asahi-Asia-&-Japan-Watch-Import-Notes) is reference to how the JDA currently handles these uploads.
 - `jsonifyFeed.py` uses an items asahi assigned id as a foreign key - so eliminating duplicates and file names.
