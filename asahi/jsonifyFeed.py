@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+###########
+# imports #
+###########
 try:
 	import xml.etree.cElementTree as ET
 except ImportError:
@@ -21,12 +24,30 @@ import sys
 reload(sys)
 sys.setdefaultencoding("utf-8")
 
-# Set location to store .json and .jpg files.
-# This location should match the location that pullDownFeed downloads .xml files.
+
+#########
+# Setup #
+#########
+# Set path for location to store .json and .jpg files.
+# This location should match the location that pullDownFeed.sh downloads .xml files.
 PATH = "/var/www/alex/asahi_rss_test/feed"
 
-# Iterate through each asahi rss xml file, convert each item within it to single json
-# file, thus elliminating duplicates, and then remove the xml files.
+
+###########
+# Helpers #
+###########
+def getFirstChildSafely(item):
+	if item:
+		return item[0]
+	else:
+		return ''
+
+
+########
+# Main #
+########
+# Iterate through each xml file, convert each item within it to single json
+# file, taking care of duplicates, and then remove the *.xml files.
 filepath = os.path.join(PATH, "*.xml")
 for filename in glob.iglob(filepath):
 
@@ -38,10 +59,10 @@ for filename in glob.iglob(filepath):
 	parser = ET.XMLParser(encoding="utf-8")
 	root = ET.fromstring(dataxml)
 
-	# Create a list for within-the-same-file item duplication checking
+	# Create a list for in-file item duplication checking
 	duplicate_item_list = []
 
-	# Iterate through each item within the file and process metadata
+	# Iterate through each news item
 	for item in root.findall(".//item"):
 
 		#######
@@ -79,12 +100,12 @@ for filename in glob.iglob(filepath):
 			########
 			article_text_unformatted = item.find("description").text
 			article_text_unformatted = str(article_text_unformatted)
-			# replace included full width parens with normal parens
+			#... and then replace/delete weird full width parens with normal parens
 			article_text_unformatted = re.sub(ur'[\xef\xbc\x88]+', '(', article_text_unformatted)
 			article_text_unformatted = article_text_unformatted[:-3]+ ')'
-			# ... and remove author string from article_fulltext
+			#... and remove author string from article_fulltext
 			article_text_unformatted_regex = re.compile('.*>')
-			article_text_formatted = article_text_unformatted_regex.findall(article_text_unformatted)[0]
+			article_text_formatted = getFirstChildSafely(article_text_unformatted_regex.findall(article_text_unformatted))
 
 			##########
 			# Author #
@@ -92,31 +113,32 @@ for filename in glob.iglob(filepath):
 			# Grab author string by looking for last closing </p> tag...
 			author_regex = re.compile('(?!.*>).')
 			author = author_regex.findall(article_text_unformatted)
-			# and collapse the resulting array of captured groups
+			# and collapse the resulting array of captured groups...
 			author = ''.join(author)
-			# remove end parentheses
+			# remove and parenthesis...
 			author = author.replace('(', '')
 			author = author.replace(')', '')
-			# remove the "By" that may precede the author string
+			# then removing the "By" that may precede it ...
 			author_clean_regex = re.compile('(?<=[Bb]y ).*')
-			author = author_clean_regex.findall(author)[0]
+
+			author = getFirstChildSafely(author_clean_regex.findall(author))
 			# and the "/..." that could follow.
 			author_clean_regex2 = re.compile('.*(?=/)')
-			article_author = author_clean_regex2.findall(author)[0]
+			article_author = getFirstChildSafely(author_clean_regex2.findall(author))
 
 			#########
 			# Photo #
 			#########
 			article_photo = ''
-                        # Does the item include a photo?
 			if item.find("enclosure") is not None:
 				photo_text = root.find(".//enclosure").text
 				photo_url_original = item.find("enclosure").attrib.get("url")
+
+				# download photo into directory
+				print photo_url_original
 				photo_filename = photo_url_original.split('/')[-1]
 				photo_fullfilename = os.path.join(PATH, photo_filename)
-				# download photo into directory
 				urllib.urlretrieve(photo_url_original, photo_fullfilename)
-                                # and reference its future s3 location
 				article_photo = "https://s3.amazonaws.com/JDA-Files/" + photo_filename
 
 			###########
@@ -124,24 +146,29 @@ for filename in glob.iglob(filepath):
 			###########
 			name = id_at_source + '.json'
 			storagePath = os.path.join(PATH, name)
-			current_file = open(path, 'a')
+			current_file = open(storagePath, 'a')
 
 			current_file.write('{"items": [')
 
-			article_headline =       json.dumps(article_headline, ensure_ascii=False)
+			article_headline = json.dumps(article_headline, ensure_ascii=False)
 			article_text_formatted = json.dumps(article_text_formatted, ensure_ascii=False)
-			id_at_source =           json.dumps(id_at_source, ensure_ascii=False)
-			article_photo =          json.dumps(article_photo, ensure_ascii=False)
-			article_date =           json.dumps(article_date, ensure_ascii=False)
-			uri =                    json.dumps(uri, ensure_ascii=False)
-			article_author =         json.dumps(article_author, ensure_ascii=False)
+			id_at_source = json.dumps(id_at_source, ensure_ascii=False)
+			article_photo = json.dumps(article_photo, ensure_ascii=False)
+			article_date = json.dumps(article_date, ensure_ascii=False)
+			uri = json.dumps(uri, ensure_ascii=False)
+			article_author = json.dumps(article_author, ensure_ascii=False)
 
+			#############################
+			# Stringify and assign keys #
+			#############################
 			json_data = '{"title": "' + article_headline[1:-1] + '", "text": "' + article_text_formatted[1:-1] + '", "uri": "' + uri[1:-1] + '", "attribution_uri": "' + uri[1:-1] + '", "archive": "Asahi Asia & Japan Watch", "media_type": "Article", "layer_type": "Article", "image_url": "", "thumbnail_url": "' + article_photo[1:-1] + '", "child_items_count": 0' + ', "location": "", "media_date_created": "' + article_date[1:-1] + '", "media_creator_username": "' + article_author[1:-1] + '", "media_creator_realname": "' + article_author[1:-1] + '", "license": "", "attributes": [], "child_items": [], "tags": [], "id_at_source": "' + id_at_source[1:-1] + '", "published": 1}'
 
 			current_file.write(json_data.encode('utf-8'))
 			current_file.write(']}')
 			current_file.close()
 
-	# delete xml files
+	###########
+	# Cleanup #
+	###########
 	if filename:
-		os.remove(filename)
+            os.remove(filename)
