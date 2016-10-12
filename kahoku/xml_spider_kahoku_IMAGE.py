@@ -16,14 +16,13 @@ class XmlSpider(BaseSpider):
   #################
   name = "xmlscrape"
   allowed_domains = ["kahoku-archive.shinrokuden.irides.tohoku.ac.jp"]
-  PATH = '/Users/horak/Dropbox/JDA/JDA-scripts/kahoku/'
 
   #################
   # set scrap url #
   #################
   # select which type of record to grab
   # start_url = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE"
-  start_url = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=5xum7v4o7-1B1JcK6WfGFg"
+  start_url = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=Iaeoy4eQF_Msh6Q_Sv_dnA"
   blank_start_url = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE"
   start_urls = []
 
@@ -41,7 +40,6 @@ class XmlSpider(BaseSpider):
     print priorResumptionToken, 'prior resumption token'
   else:
     print 'not pre-existing'
-  print start_urls
   start_urls.append(start_url)
 
   ###########
@@ -68,6 +66,7 @@ class XmlSpider(BaseSpider):
     jsons = []
     nextFileLink = ''
     uriList = []
+    OUTPUT_PATH = '/Users/horak/Dropbox/JDA/JDA-scripts/kahoku/feed/'
 
     print 'begin parse 2'
 
@@ -240,5 +239,5 @@ class XmlSpider(BaseSpider):
     else: 
       print 'onto next file'
       nextFileLink = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=" + resumptionToken[0].encode('ascii')
-      open(resumptionToken[0].encode('ascii') + '.json', 'wb').write(''.join(jsons).encode("UTF-8"))
+      open(OUTPUT_PATH + resumptionToken[0].encode('ascii') + '.json', 'wb').write(''.join(jsons).encode("UTF-8"))
       yield Request(nextFileLink, callback = self.parse)
