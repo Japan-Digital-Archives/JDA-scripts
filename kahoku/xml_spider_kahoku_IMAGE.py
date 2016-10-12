@@ -4,20 +4,49 @@
 # '$ scrapy runspider xml_spider_kahoku_IMAGE.py'
 #################################################
 
-
 from scrapy.spider import BaseSpider
 from scrapy.selector import XmlXPathSelector
 from scrapy.http import Request
-import urllib, json, contextlib
+import urllib, json, contextlib, os
 
 class XmlSpider(BaseSpider):
+
+  #################
+  # setup scraper #
+  #################
   name = "xmlscrape"
   allowed_domains = ["kahoku-archive.shinrokuden.irides.tohoku.ac.jp"]
-  start_urls = [ 
-  "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=DbSTB68T6CHrhGAmUohnNA"
-  ]
-  # "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE" 
+  PATH = '/Users/horak/Dropbox/JDA/JDA-scripts/kahoku/'
 
+  #################
+  # set scrap url #
+  #################
+  # select which type of record to grab
+  # start_url = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE"
+  start_url = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=5xum7v4o7-1B1JcK6WfGFg"
+  blank_start_url = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE"
+  start_urls = []
+
+  ######################
+  # continue scraping? #
+  ######################
+  # set key from file
+  tokenFileExists = os.path.exists('lastToken')
+  lastFileExists = os.path.exists('last.json')
+  if tokenFileExists and not lastFileExists:
+    print 'pre-existing'
+    myFile = open('lastToken', 'r')
+    priorResumptionToken = myFile.read()
+    start_url = blank_start_url + "&resumptionToken=" + priorResumptionToken
+    print priorResumptionToken, 'prior resumption token'
+  else:
+    print 'not pre-existing'
+  print start_urls
+  start_urls.append(start_url)
+
+  ###########
+  # helpers #
+  ###########
   def handleNull(self, field):
     if not field:
       field = ''
@@ -25,7 +54,11 @@ class XmlSpider(BaseSpider):
       field = field[0]
     return field
 
+  #########
+  # parse #
+  #########
   def parse(self, response):
+    print 'begin parse'
     x = XmlXPathSelector(response)
     x.remove_namespaces()
     x.register_namespace("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
@@ -33,9 +66,42 @@ class XmlSpider(BaseSpider):
     items = x.select('//record/metadata/RDF')
 
     jsons = []
-    num = 0
+    nextFileLink = ''
+    uriList = []
 
+    print 'begin parse 2'
+
+    ####################################
+    # record resumption token as prior #
+    ####################################
+    resumptionToken = x.select('//resumptionToken/text()').extract()
+
+    # replace lastToken, whether it exists or not, with new token
+    if resumptionToken:
+      with open('lastToken', 'w+r') as f:
+        print 'writing or replaceing token'
+        f.truncate()
+        f.write(resumptionToken[0])
+        f.close() 
+
+    ###################
+    # parse xml items #
+    ###################
     for item in items:
+      print 'item'
+      ######################
+      # media_date_created #
+      ######################
+      media_date_created = item.select('Resource/created/text()').extract()
+      media_date_created = self.handleNull(media_date_created)
+      #print media_date_created
+
+      #################
+      # response_date #
+      #################
+      response_date = item.select('Resource/responseDate/text()').extract()
+      response_date = self.handleNull(response_date)
+
       ####################
       ##### creator ######
       ##### archive ######
@@ -46,13 +112,6 @@ class XmlSpider(BaseSpider):
       archive = "Kahoku Shimpo Disasters Archive"
       media_type = "Image"
       layer_type = "Image" 
-
-      ####################
-      # media_date_created
-      ####################
-      media_date_created = item.select('Resource/created/text()').extract()
-      media_date_created = self.handleNull(media_date_created)
-      # print media_date_created
 
       ####################
       ###### abstract ####
@@ -71,6 +130,7 @@ class XmlSpider(BaseSpider):
       ####################
       uri = item.select('Resource/screen/Image/@rdf:about').extract()
       uri = self.handleNull(uri)
+      uriList.append(uri)
       # print "**********uri*************: ", uri
 
       ####################
@@ -128,9 +188,9 @@ class XmlSpider(BaseSpider):
       ######## Lat/Long ########
       # GEOCODE using location # 
       # information and google # 
-      # maps API               #
-      # made using Alex H's    #
-      # account for expediency #
+      # maps API.              #
+      # Made using Alex H's    #
+      # account for expediency.#
       ##########################
       lat = '' 
       lng = ''
@@ -168,11 +228,17 @@ class XmlSpider(BaseSpider):
       # print json_entry
       jsons.append(json_entry)
 
-    resumptionToken = x.select('//resumptionToken/text()').extract()
-    nextFileLink = ''
+    ##########################
+    # cotinue with next file #
+    ##########################
     if resumptionToken == []:
+      # REMOVE lastTOken file
+      print 'last'
+      nextFileLink = ""
+      newJsons = []
       open('last.json', 'wb').write(''.join(jsons).encode("UTF-8"))
-    else:
+    else: 
+      print 'onto next file'
       nextFileLink = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=" + resumptionToken[0].encode('ascii')
       open(resumptionToken[0].encode('ascii') + '.json', 'wb').write(''.join(jsons).encode("UTF-8"))
-    yield Request(nextFileLink, callback = self.parse)
+      yield Request(nextFileLink, callback = self.parse)
