@@ -1,105 +1,101 @@
-#################################################
-# This script is for scraping the IMAGE contents of the 
-# Kahoku Shimpo Disaster Archive. Run it with
-# '$ scrapy runspider xml_spider_kahoku_IMAGE.py'
-#################################################
+#!/usr/bin/env python
 
+###########
+# Imports #
+###########
 from scrapy.spider import BaseSpider
 from scrapy.selector import XmlXPathSelector
 from scrapy.http import Request
-import urllib, json, contextlib, os
+import urllib, json, contextlib, os, glob
 
 class XmlSpider(BaseSpider):
 
+
   #################
-  # setup scraper #
+  # Setup Scraper #
   #################
-  name = "xmlscrape"
+  name            = "xmlscrape"
   allowed_domains = ["kahoku-archive.shinrokuden.irides.tohoku.ac.jp"]
-
-  #################
-  # set scrap url #
-  #################
-  # select which type of record to grab
-  # start_url = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE"
-  start_url = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=Iaeoy4eQF_Msh6Q_Sv_dnA"
+  start_url       = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=P6EcZPbntF6_UERMqo0iRQ"
   blank_start_url = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE"
-  start_urls = []
+  start_urls      = []
 
-  ######################
-  # continue scraping? #
-  ######################
-  # set key from file
-  tokenFileExists = os.path.exists('lastToken')
-  lastFileExists = os.path.exists('last.json')
-  if tokenFileExists and not lastFileExists:
-    print 'pre-existing'
-    myFile = open('lastToken', 'r')
-    priorResumptionToken = myFile.read()
-    start_url = blank_start_url + "&resumptionToken=" + priorResumptionToken
-    print priorResumptionToken, 'prior resumption token'
-  else:
-    print 'not pre-existing'
-  start_urls.append(start_url)
+  # Will return URL with resumption token if possible
+  def getResumptionUrl(start_url, blank_start_url, start_urls):
+    tokenFileExists = os.path.exists('previous_resumption_token')
+    finalFileExists  = glob.glob('final*')
 
-  ###########
-  # helpers #
-  ###########
-  def handleNull(self, field):
-    if not field:
-      field = ''
-    else:
-      field = field[0]
-    return field
+    if tokenFileExists and not finalFileExists:
+      token = open('previous_resumption_token', 'r').read()
+      start_url = blank_start_url + "&resumptionToken=" + token
+      print '****** RESUMING WITH TOKEN: ' + token + ' ******'
 
-  #########
-  # parse #
-  #########
+    start_urls.append(start_url)
+
+  getResumptionUrl(start_url, blank_start_url, start_urls) 
+
+
+  ##############
+  # Parse Feed #
+  ##############
   def parse(self, response):
-    print 'begin parse'
+
+    ###########
+    # Helpers #
+    ###########
+    def getSavedResumptionToken():
+      token = open('previous_resumption_token', 'r').read()
+      return token
+
+    def handleNull(field):
+      if not field:
+        field = ''
+      else:
+        field = field[0]
+      return field
+
+    def saveResumptionToken(token):
+      if token:
+        with open('previous_resumption_token', 'w+r') as f:
+          print '****** (OVER)WRITING RESUMPTION TOKEN: ' + token[0] + ' ******'
+          f.truncate()
+          f.write(token[0])
+          f.close() 
+      else:
+        print '****** NO RESUMPTION TOKEN: FINAL RESPONSE PAGE ******'
+
+    #########
+    # Setup #
+    #########
     x = XmlXPathSelector(response)
     x.remove_namespaces()
     x.register_namespace("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-    items = []
-    items = x.select('//record/metadata/RDF')
-
-    jsons = []
+    items        = []
+    items        = x.select('//record/metadata/RDF')
+    jsons        = []
+    idList       = []
     nextFileLink = ''
-    uriList = []
-    OUTPUT_PATH = '/Users/horak/Dropbox/JDA/JDA-scripts/kahoku/feed/'
+    output_path  = '/Users/horak/Dropbox/JDA/JDA-scripts/kahoku/feed/'
+    resumption_token = x.select('//resumptionToken/text()').extract()
+    saveResumptionToken(resumption_token)
 
-    print 'begin parse 2'
-
-    ####################################
-    # record resumption token as prior #
-    ####################################
-    resumptionToken = x.select('//resumptionToken/text()').extract()
-
-    # replace lastToken, whether it exists or not, with new token
-    if resumptionToken:
-      with open('lastToken', 'w+r') as f:
-        print 'writing or replaceing token'
-        f.truncate()
-        f.write(resumptionToken[0])
-        f.close() 
-
-    ###################
-    # parse xml items #
-    ###################
+    ###############
+    # Parse Items #
+    ###############
+    print '****** PARSING FILE... ******'
     for item in items:
-      print 'item'
+
       ######################
       # media_date_created #
       ######################
       media_date_created = item.select('Resource/created/text()').extract()
-      media_date_created = self.handleNull(media_date_created)
-      #print media_date_created
+      media_date_created = handleNull(media_date_created)
 
       #################
       # response_date #
       #################
       response_date = item.select('Resource/responseDate/text()').extract()
-      response_date = self.handleNull(response_date)
+      response_date = handleNull(response_date)
 
       ####################
       ##### creator ######
@@ -108,36 +104,41 @@ class XmlSpider(BaseSpider):
       #### layer_type ####
       ####################
       media_creator_username = 'Kahoku Shimpo Publishing Co.'
-      archive = "Kahoku Shimpo Disasters Archive"
-      media_type = "Image"
-      layer_type = "Image" 
+      archive                = "Kahoku Shimpo Disasters Archive"
+      media_type             = "Image"
+      layer_type             = "Image" 
 
-      ####################
-      ###### abstract ####
-      ####################
-      # title = item.select('Resource/title/text()').extract() # seems to be the same for everything ... so i'm using abstract instead which seems to change
+      ##################
+      #### abstract ####
+      ##### title ######
+      ##################
+      # Abstract tends to be more unique, though not always present. Title is often repetitive but more consistently filled.
       abstract = item.select('Resource/abstract/text()').extract()
-      abstract = self.handleNull(abstract)
+      title    = item.select('Resource/title/text()').extract()
+      title    = handleNull(title)
+      abstract = handleNull(abstract)
       abstract = abstract.replace("\r\n", "")
-      # print "*****************abstract ", abstract
+      if not abstract:
+        abstract = title
 
       ####################
       ####### URI ######## 
-      # is image and is  #
-      # set equal to att #
-      # uri.. convention #
       ####################
       uri = item.select('Resource/screen/Image/@rdf:about').extract()
-      uri = self.handleNull(uri)
-      uriList.append(uri)
-      # print "**********uri*************: ", uri
+      uri = handleNull(uri)
+
+      ###################
+      #### uniqueId ##### 
+      ###################
+      # Used for de-duping
+      uniqueId = item.select('Resource/identifier/text()').extract()
+      idList.append(uniqueId)
 
       ####################
       ###### source ###### 
       ####################
       source = item.select('Resource/@rdf:about').extract()
-      source = self.handleNull(source)
-      # print "**********source*************: ", source
+      source = handleNull(source)
 
       ####################
       ####### Tags ####### 
@@ -147,29 +148,27 @@ class XmlSpider(BaseSpider):
         tags_string = '[]'
       else:
         tags_string = '"' + '", "'.join(tags) + '"'
-      # print "********tags_string**********: ", tags_string
 
       ####################
       #### Thumbnail ##### 
       ####################
       thumbnail_url = item.select('Resource/thumbnail/Image/@rdf:about').extract()
-      thumbnail_url = self.handleNull(thumbnail_url)
-      # print "**********thumbnail*************: ", thumbnail_url
+      thumbnail_url = handleNull(thumbnail_url)
 
       ####################
       ##### Location ##### 
       ####################
-      region = item.select('Resource/spatial/Description/region/text()').extract()
-      locality = item.select('Resource/spatial/Description/locality/text()').extract()
-      street_address = item.select('Resource/spatial/Description/street-address/text()').extract()
+      region           = item.select('Resource/spatial/Description/region/text()').extract()
+      locality         = item.select('Resource/spatial/Description/locality/text()').extract()
+      street_address   = item.select('Resource/spatial/Description/street-address/text()').extract()
       if region or locality or street_address:
-        region = self.handleNull(region)
-        locality = self.handleNull(locality)
-        street_address = self.handleNull(street_address)
-        locationTemp = [street_address, locality, region]
-        location = ''
+        region         = handleNull(region)
+        locality       = handleNull(locality)
+        street_address = handleNull(street_address)
+        locationTemp   = [street_address, locality, region]
+        location       = ''
 
-        # This handles comma location and existence issues
+        # Handles comma location and attribute existence variability
         for item in locationTemp:
           if item:
             if location is '':
@@ -178,27 +177,21 @@ class XmlSpider(BaseSpider):
               location = location + ", " + item
         if location[location.__len__()-1] is ',':
           location = location[:-1]
-        # print "**********location*************: ", location
       else:
         location = ''
-        # print "**********location*************: ", location
 
       ##########################
       ######## Lat/Long ########
-      # GEOCODE using location # 
-      # information and google # 
-      # maps API.              #
-      # Made using Alex H's    #
-      # account for expediency.#
       ##########################
+      # Uses Google Maps
       lat = '' 
       lng = ''
       if location != '':
-        KEY = '&key=AIzaSyCGF2BwNPNckrbx6L2tQRATBcjKv0C3xCo'
-        GOOGLE_URI = 'https://maps.googleapis.com/maps/api/geocode/json?address=' 
-        location_encoded = location.encode('utf8')
+        key                = '&key=AIzaSyCGF2BwNPNckrbx6L2tQRATBcjKv0C3xCo'
+        google_uri         = 'https://maps.googleapis.com/maps/api/geocode/json?address=' 
+        location_encoded   = location.encode('utf8')
         location_url_ready = urllib.quote_plus(location_encoded, safe='')
-        request_uri = GOOGLE_URI + location_url_ready + KEY
+        request_uri        = google_uri + location_url_ready + key 
         with contextlib.closing(urllib.urlopen(request_uri)) as response:
           data = json.load(response)
           if json.dumps(data['results']) != '[]':
@@ -208,10 +201,13 @@ class XmlSpider(BaseSpider):
             lat = 'null' 
             lng = 'null'
 
+      ##########################
+      ######## JSONify #########
+      ##########################
       json_entry = ( '{"title": "' 
         + abstract + '", "uri": "' 
         + uri + '", "attribution_uri": "' 
-        + uri + '", "media_date_created": "' 
+        + source + '", "media_date_created": "' 
         + media_date_created + '", "media_creator_username": "' 
         + media_creator_username + '", "thumbnail_url": "' 
         + thumbnail_url + '", "media_geo_latitude": "' 
@@ -227,17 +223,21 @@ class XmlSpider(BaseSpider):
       # print json_entry
       jsons.append(json_entry)
 
-    ##########################
-    # cotinue with next file #
-    ##########################
-    if resumptionToken == []:
-      # REMOVE lastTOken file
-      print 'last'
+    #########
+    # Done? #
+    #########
+    if resumption_token == []:
       nextFileLink = ""
       newJsons = []
-      open('last.json', 'wb').write(''.join(jsons).encode("UTF-8"))
-    else: 
-      print 'onto next file'
-      nextFileLink = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=" + resumptionToken[0].encode('ascii')
-      open(OUTPUT_PATH + resumptionToken[0].encode('ascii') + '.json', 'wb').write(''.join(jsons).encode("UTF-8"))
+      previous_resumption_token = getSavedResumptionToken()
+      # if final exists:
+        # for item in jsons
+        # if item.uri i
+      # De-dedup (jsons)
+      # if list exists - compare(jsons)
+      # then overwrite the list
+      open(output_path + 'final-' + previous_resumption_token + '.json', 'wb').write(''.join(jsons).encode("UTF-8"))
+    else: # Or next job...
+      nextFileLink = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=" + resumption_token[0].encode('ascii')
+      open(output_path + resumption_token[0].encode('ascii') + '.json', 'wb').write(''.join(jsons).encode("UTF-8"))
       yield Request(nextFileLink, callback = self.parse)

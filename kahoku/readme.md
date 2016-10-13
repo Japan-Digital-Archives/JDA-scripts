@@ -1,4 +1,4 @@
-# Instructions for subscribing to and processing the Kahoku Shimpo API
+# Instructions for the Kahoku Shimpo API
 
 ## Setup
 To get started install...
@@ -20,3 +20,16 @@ When the scrapper reaches the last of the requests' items it will no longer be g
 
 ### Why Resumption Tokens?
 The Kahoku API exposes `from`, `to`, and `until`-date filtering url params which would at first glance seem to make for a better option, but unfortuantely these are limited to only `date_modified` (as far as I could tell). 
+
+## Google Maps API
+- Google Maps is used to convert the `location` into `lat`/`long` coordinates. Right now, a free API key is being used that is rate limited. 
+
+## Cron
+- The cron is only run once a month considering how slowly new items are added.
+```
+
+``` 
+
+## Quirks
+- The same `title` attribute is often found for many items. I found the `abstract` attribute to be more unique, though often just an empty string. Thus, I default to that attribute and use `title` as a backup.
+- Both the `attribution_uri` and `uri` are populated using the same source field: `Resource/screen/Image/@rdf:about`. This is a precedent I am following blindly, unsure why.
