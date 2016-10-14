@@ -6,6 +6,7 @@
 from scrapy.spider import BaseSpider
 from scrapy.selector import XmlXPathSelector
 from scrapy.http import Request
+from datetime import datetime
 import urllib, json, contextlib, os, glob
 
 class XmlSpider(BaseSpider):
@@ -40,12 +41,11 @@ class XmlSpider(BaseSpider):
   ##############
   def parse(self, response):
 
-    ###########
-    # Helpers #
-    ###########
-    def getSavedResumptionToken():
-      token = open('previous_resumption_token', 'r').read()
-      return token
+    #################
+    # Class Helpers #
+    #################
+    def getDateString():
+      return str(datetime.now())
 
     def handleNull(field):
       if not field:
@@ -63,6 +63,7 @@ class XmlSpider(BaseSpider):
           f.close() 
       else:
         print '****** NO RESUMPTION TOKEN: FINAL RESPONSE PAGE ******'
+ 
 
     #########
     # Setup #
@@ -73,7 +74,7 @@ class XmlSpider(BaseSpider):
     items        = []
     items        = x.select('//record/metadata/RDF')
     jsons        = []
-    idList       = []
+    id_list      = []
     nextFileLink = ''
     output_path  = '/Users/horak/Dropbox/JDA/JDA-scripts/kahoku/feed/'
     resumption_token = x.select('//resumptionToken/text()').extract()
@@ -128,11 +129,12 @@ class XmlSpider(BaseSpider):
       uri = handleNull(uri)
 
       ###################
-      #### uniqueId ##### 
+      #### unique_id ##### 
       ###################
       # Used for de-duping
-      uniqueId = item.select('Resource/identifier/text()').extract()
-      idList.append(uniqueId)
+      unique_id = item.select('Resource/identifier/text()').extract()
+      unique_id = str(unique_id[0])
+      id_list.append(unique_id)
 
       ####################
       ###### source ###### 
@@ -220,23 +222,39 @@ class XmlSpider(BaseSpider):
         + layer_type + '", "child_items_count": 0, "published": 1}, '
       )
 
-      # print json_entry
-      jsons.append(json_entry)
+      #####################
+      # Duplicate Checker #
+      #####################
+      # Check for duplicates only in the "final-..." file since that is the only 
+      # file without a resumption token.
+      if not resumption_token and os.path.exists('dup_list'):
+        dup_list = open('dup_list', 'r').read()
+        if unique_id not in dup_list:
+          jsons.append(json_entry)
+        else:
+          print '****** DUPLICATE FOUND - not adding file ******'
+      else:
+          jsons.append(json_entry)
+
+
+    ######################
+    # Save Item URI List #
+    ######################
+    # Used for checking duplicates,
+    # will overwrite itself.
+    with open('dup_list', 'w+r') as f:
+      print '****** (OVER)WRITING DEDUP LIST ******'
+      f.truncate() 
+      for item in id_list:
+        print>>f, item
+      f.close() 
 
     #########
     # Done? #
     #########
     if resumption_token == []:
       nextFileLink = ""
-      newJsons = []
-      previous_resumption_token = getSavedResumptionToken()
-      # if final exists:
-        # for item in jsons
-        # if item.uri i
-      # De-dedup (jsons)
-      # if list exists - compare(jsons)
-      # then overwrite the list
-      open(output_path + 'final-' + previous_resumption_token + '.json', 'wb').write(''.join(jsons).encode("UTF-8"))
+      open(output_path + 'final-' + getDateString() + '.json', 'wb').write(''.join(jsons).encode("UTF-8"))
     else: # Or next job...
       nextFileLink = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=" + resumption_token[0].encode('ascii')
       open(output_path + resumption_token[0].encode('ascii') + '.json', 'wb').write(''.join(jsons).encode("UTF-8"))
