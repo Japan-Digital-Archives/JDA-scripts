@@ -44,6 +44,16 @@ class XmlSpider(BaseSpider):
     #################
     # Class Helpers #
     #################
+
+    #####################
+    # Erase Empty Files #
+    #####################
+    # Will erase any files that have no contents (such as those without duplicates)
+    def removeEmptyFiles():
+      for filename in os.listdir(output_path):
+        if os.stat(output_path + filename).st_size == 0:
+          os.remove(output_path + filename)
+
     def getDateString():
       return str(datetime.now())
 
@@ -231,8 +241,6 @@ class XmlSpider(BaseSpider):
         dup_list = open('dup_list', 'r').read()
         if unique_id not in dup_list:
           jsons.append(json_entry)
-        else:
-          print '****** DUPLICATE FOUND - not adding file ******'
       else:
           jsons.append(json_entry)
 
@@ -255,6 +263,7 @@ class XmlSpider(BaseSpider):
     if resumption_token == []:
       nextFileLink = ""
       open(output_path + 'final-' + getDateString() + '.json', 'wb').write(''.join(jsons).encode("UTF-8"))
+      removeEmptyFiles()
     else: # Or next job...
       nextFileLink = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=" + resumption_token[0].encode('ascii')
       open(output_path + resumption_token[0].encode('ascii') + '.json', 'wb').write(''.join(jsons).encode("UTF-8"))

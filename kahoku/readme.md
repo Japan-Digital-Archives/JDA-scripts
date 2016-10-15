@@ -19,7 +19,9 @@ Importantly, these resumption tokens act as unique identifiers for requests prev
 When the scrapper reaches the last of the requests' items the response no longer includes a `resumptionToken` and will instead create a file called `final-[datetime].json`. Unfortunately, because the that resposne yields no unique identifier, files put in last will need to be de-duplicated.
 
 ## De-deduping
-The final response page is not given a `resumptionToken`. I have assumed that that page's items can change, namely, that new items can be added. As such, the files in `final-[datetime].json` are deduped.
+The final response page is not given a `resumptionToken`. I have assumed that that page's items can change, namely, that new items can be added. As such, the files in `final-[datetime].json` are deduped. 
+
+Empty files are cleared automatically.
 
 ### Why Resumption Tokens?
 The Kahoku API exposes `from`, `to`, and `until`-date filtering url params which would at first glance seem to make for a better option, but unfortuantely these are limited to only `date_modified` (as far as I could tell). 
