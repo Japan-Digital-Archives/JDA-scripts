@@ -6,8 +6,7 @@
 from scrapy.spider import BaseSpider
 from scrapy.selector import XmlXPathSelector
 from scrapy.http import Request
-from datetime import datetime
-import urllib, json, contextlib, os, glob
+import urllib, json, contextlib, os, glob, time
 
 class XmlSpider(BaseSpider):
 
@@ -55,7 +54,8 @@ class XmlSpider(BaseSpider):
           os.remove(output_path + filename)
 
     def getDateString():
-      return str(datetime.now())
+      timestr = time.strftime("%Y%m%d-%H%M%S") 
+      return timestr
 
     def handleNull(field):
       if not field:
