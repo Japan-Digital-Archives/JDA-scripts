@@ -26,6 +26,9 @@ Empty files are cleared automatically.
 ### Why Resumption Tokens?
 The Kahoku API exposes `from`, `to`, and `until`-date filtering url params which would at first glance seem to make for a better option, but unfortuantely these are limited to only `date_modified` (as far as I could tell). 
 
+## Images
+Asahi files contain both a higher res and thumbnail image. Following the Asahi precedent, the higher res image is downloaded for manual upload to S3 and the `uri` is linked to that future location on S3 by its ID. As with Asahi, this could be automated easily.
+
 ## Google Maps API
 - Google Maps is used to convert the `location` into `lat`/`long` coordinates. Right now, a free API key is being used that is rate limited. 
 

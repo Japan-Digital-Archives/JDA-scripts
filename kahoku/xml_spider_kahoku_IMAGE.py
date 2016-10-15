@@ -14,10 +14,10 @@ class XmlSpider(BaseSpider):
   #################
   # Setup Scraper #
   #################
-  name            = "xmlscrape"
-  allowed_domains = ["kahoku-archive.shinrokuden.irides.tohoku.ac.jp"]
-  start_url       = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=P6EcZPbntF6_UERMqo0iRQ"
-  blank_start_url = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE"
+  name            = 'xmlscrape'
+  allowed_domains = ['kahoku-archive.shinrokuden.irides.tohoku.ac.jp']
+  start_url       = 'http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=P6EcZPbntF6_UERMqo0iRQ'
+  blank_start_url = 'http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE'
   start_urls      = []
 
   # Will return URL with resumption token if possible
@@ -27,7 +27,7 @@ class XmlSpider(BaseSpider):
 
     if tokenFileExists and not finalFileExists:
       token = open('previous_resumption_token', 'r').read()
-      start_url = blank_start_url + "&resumptionToken=" + token
+      start_url = blank_start_url + '&resumptionToken=' + token
       print '****** RESUMING WITH TOKEN: ' + token + ' ******'
 
     start_urls.append(start_url)
@@ -54,7 +54,7 @@ class XmlSpider(BaseSpider):
           os.remove(output_path + filename)
 
     def getDateString():
-      timestr = time.strftime("%Y%m%d-%H%M%S") 
+      timestr = time.strftime('%Y%m%d-%H%M%S') 
       return timestr
 
     def handleNull(field):
@@ -80,7 +80,7 @@ class XmlSpider(BaseSpider):
     #########
     x = XmlXPathSelector(response)
     x.remove_namespaces()
-    x.register_namespace("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+    x.register_namespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#')
     items        = []
     items        = x.select('//record/metadata/RDF')
     jsons        = []
@@ -115,9 +115,9 @@ class XmlSpider(BaseSpider):
       #### layer_type ####
       ####################
       media_creator_username = 'Kahoku Shimpo Publishing Co.'
-      archive                = "Kahoku Shimpo Disasters Archive"
-      media_type             = "Image"
-      layer_type             = "Image" 
+      archive                = 'Kahoku Shimpo Disasters Archive'
+      media_type             = 'Image'
+      layer_type             = 'Image' 
 
       ##################
       #### abstract ####
@@ -128,15 +128,9 @@ class XmlSpider(BaseSpider):
       title    = item.select('Resource/title/text()').extract()
       title    = handleNull(title)
       abstract = handleNull(abstract)
-      abstract = abstract.replace("\r\n", "")
+      abstract = abstract.replace('\r\n', '')
       if not abstract:
         abstract = title
-
-      ####################
-      ####### URI ######## 
-      ####################
-      uri = item.select('Resource/screen/Image/@rdf:about').extract()
-      uri = handleNull(uri)
 
       ###################
       #### unique_id ##### 
@@ -145,6 +139,23 @@ class XmlSpider(BaseSpider):
       unique_id = item.select('Resource/identifier/text()').extract()
       unique_id = str(unique_id[0])
       id_list.append(unique_id)
+
+      ####################
+      ####### URI ######## 
+      ####################
+      uri = item.select('Resource/screen/Image/@rdf:about').extract()
+      if uri:
+        uri = uri[0]
+        urllib.urlretrieve(uri, output_path + unique_id + '.jpg')
+        uri = 'https://s3.amazonaws.com/JDA-Files/' + unique_id
+      else:
+        uri = handleNull(uri)
+
+      ####################
+      #### Thumbnail ##### 
+      ####################
+      thumbnail_url = item.select('Resource/thumbnail/Image/@rdf:about').extract()
+      thumbnail_url = handleNull(thumbnail_url)
 
       ####################
       ###### source ###### 
@@ -160,12 +171,6 @@ class XmlSpider(BaseSpider):
         tags_string = '[]'
       else:
         tags_string = '"' + '", "'.join(tags) + '"'
-
-      ####################
-      #### Thumbnail ##### 
-      ####################
-      thumbnail_url = item.select('Resource/thumbnail/Image/@rdf:about').extract()
-      thumbnail_url = handleNull(thumbnail_url)
 
       ####################
       ##### Location ##### 
@@ -186,7 +191,7 @@ class XmlSpider(BaseSpider):
             if location is '':
               location = location + item
             else:
-              location = location + ", " + item
+              location = location + ', ' + item
         if location[location.__len__()-1] is ',':
           location = location[:-1]
       else:
@@ -262,9 +267,9 @@ class XmlSpider(BaseSpider):
     #########
     if resumption_token == []:
       nextFileLink = ""
-      open(output_path + 'final-' + getDateString() + '.json', 'wb').write(''.join(jsons).encode("UTF-8"))
+      open(output_path + 'final-' + getDateString() + '.json', 'wb').write(''.join(jsons).encode('UTF-8'))
       removeEmptyFiles()
     else: # Or next job...
-      nextFileLink = "http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=" + resumption_token[0].encode('ascii')
-      open(output_path + resumption_token[0].encode('ascii') + '.json', 'wb').write(''.join(jsons).encode("UTF-8"))
+      nextFileLink = 'http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=' + resumption_token[0].encode('ascii')
+      open(output_path + resumption_token[0].encode('ascii') + '.json', 'wb').write(''.join(jsons).encode('UTF-8'))
       yield Request(nextFileLink, callback = self.parse)
