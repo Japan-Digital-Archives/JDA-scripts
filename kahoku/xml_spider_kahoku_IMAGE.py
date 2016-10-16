@@ -22,11 +22,12 @@ class XmlSpider(BaseSpider):
 
   # Will return URL with resumption token if possible
   def getResumptionUrl(start_url, blank_start_url, start_urls):
-    tokenFileExists = os.path.exists('previous_resumption_token')
-    finalFileExists  = glob.glob('final*')
+    token_path      = '/Users/horak/Dropbox/JDA/JDA-scripts/kahoku/image_output/previous_resumption_token'
+    tokenFileExists = os.path.exists(token_path)
+    finalFileExists = glob.glob('final*')
 
     if tokenFileExists and not finalFileExists:
-      token = open('previous_resumption_token', 'r').read()
+      token = open(token_path, 'r').read()
       start_url = blank_start_url + '&resumptionToken=' + token
       print '****** RESUMING WITH TOKEN: ' + token + ' ******'
 
@@ -66,7 +67,7 @@ class XmlSpider(BaseSpider):
 
     def saveResumptionToken(token):
       if token:
-        with open('previous_resumption_token', 'w+r') as f:
+        with open(token_path, 'w+r') as f:
           print '****** (OVER)WRITING RESUMPTION TOKEN: ' + token[0] + ' ******'
           f.truncate()
           f.write(token[0])
@@ -86,7 +87,9 @@ class XmlSpider(BaseSpider):
     jsons        = []
     id_list      = []
     nextFileLink = ''
-    output_path  = '/Users/horak/Dropbox/JDA/JDA-scripts/kahoku/image_feed/'
+    output_path  = '/Users/horak/Dropbox/JDA/JDA-scripts/kahoku/image_output/'
+    dup_path     = '/Users/horak/Dropbox/JDA/JDA-scripts/kahoku/image_output/dup_list'
+    token_path   = '/Users/horak/Dropbox/JDA/JDA-scripts/kahoku/image_output/previous_resumption_token'
     resumption_token = x.select('//resumptionToken/text()').extract()
     saveResumptionToken(resumption_token)
 
@@ -244,8 +247,8 @@ class XmlSpider(BaseSpider):
       #####################
       # Check for duplicates only in the "final-..." file since that is the only 
       # file without a resumption token.
-      if not resumption_token and os.path.exists('dup_list'):
-        dup_list = open('dup_list', 'r').read()
+      if not resumption_token and os.path.exists(dup_path):
+        dup_list = open(dup_path, 'r').read()
         if unique_id not in dup_list:
           jsons.append(json_entry)
       else:
@@ -257,7 +260,7 @@ class XmlSpider(BaseSpider):
     ######################
     # Used for checking duplicates,
     # will overwrite itself.
-    with open('dup_list', 'w+r') as f:
+    with open(dup_path, 'w+r') as f:
       print '****** (OVER)WRITING DEDUP LIST ******'
       f.truncate() 
       for item in id_list:

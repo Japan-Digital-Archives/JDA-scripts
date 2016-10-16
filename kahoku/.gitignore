@@ -1,4 +1,4 @@
-previous_resumption_token
-feed_image/*.json
-feed_image/*.jpg
-dup_list
+image_output/previous_resumption_token
+image_output/*.json
+image_output/*.jpg
+image_output/dup_list
