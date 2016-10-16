@@ -1,3 +1,4 @@
 previous_resumption_token
-feed/*.json
+feed_image/*.json
+feed_image/*.jpg
 dup_list
