@@ -86,7 +86,7 @@ class XmlSpider(BaseSpider):
     jsons        = []
     id_list      = []
     nextFileLink = ''
-    output_path  = '/Users/horak/Dropbox/JDA/JDA-scripts/kahoku/feed/'
+    output_path  = '/Users/horak/Dropbox/JDA/JDA-scripts/kahoku/image_feed/'
     resumption_token = x.select('//resumptionToken/text()').extract()
     saveResumptionToken(resumption_token)
 
@@ -143,8 +143,10 @@ class XmlSpider(BaseSpider):
       ####################
       ####### URI ######## 
       ####################
+      # Download image if it has not already been downloaded
       uri = item.select('Resource/screen/Image/@rdf:about').extract()
-      if uri:
+      downloaded = os.path.exists(output_path + unique_id + '.jpg')
+      if uri and not downloaded:
         uri = uri[0]
         urllib.urlretrieve(uri, output_path + unique_id + '.jpg')
         uri = 'https://s3.amazonaws.com/JDA-Files/' + unique_id
