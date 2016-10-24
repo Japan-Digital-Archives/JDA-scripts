@@ -1,14 +1,18 @@
 # Instructions for the Kahoku Shimpo API
+These instructions assume you are running python 2.7 on a unix OS.  
 
 ## Setup Scrapy
 1. Install Scrapy. 
-I'm using version 0.12, instructions for downloading that can be found [here](http://stackoverflow.com/questions/11369313/how-to-get-scrapy-version-0-12). The docs for this can be found [here](https://doc.scrapy.org/en/0.12/intro/tutorial.html) in case modifications need to be made.
+I'm using version 0.18. To get this version do the following:
+a. `git clone git://github.com/scrapy/scrapy.git`
+b. `cd scrapy`
+c. `git checkout 0.18`
+d. `sudo python setup.py install`
 
-2. Setup Scrapy project
-Make sure you are in the `kahoku` directory as indicated above and then run.
-```
-scrapy startproject kahoku
-```
+The docs for this can be found [here](https://doc.scrapy.org/en/0.18/intro/tutorial.html) in case modifications need to be made.
+
+2. Setup `PATH` variable
+Make sure to go into the 
 
 ## Run it
 ```
