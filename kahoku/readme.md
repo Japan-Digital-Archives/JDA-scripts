@@ -1,7 +1,19 @@
 # Instructions for the Kahoku Shimpo API
 
-## Setup
-To get started install...
+## Setup Scrapy
+1. Install Scrapy. 
+I'm using version 0.12, instructions for downloading that can be found [here](http://stackoverflow.com/questions/11369313/how-to-get-scrapy-version-0-12). The docs for this can be found [here](https://doc.scrapy.org/en/0.12/intro/tutorial.html) in case modifications need to be made.
+
+2. Setup Scrapy project
+Make sure you are in the `kahoku` directory as indicated above and then run.
+```
+scrapy startproject kahoku
+```
+
+## Run it
+```
+scrapy runspider xml_spider_kahoku_IMAGE.py
+```
 
 ## Item Types
  The Kahoku API can be configured to return 1 of 4 different data types, `IMAGE`, `DOCUMENT`, `MOVIE`, and `OTHER`, using the url structure below.
