@@ -2,3 +2,7 @@ image_output/previous_resumption_token
 image_output/*.json
 image_output/*.jpg
 image_output/dup_list
+../.DS_Store
+.DS_Store
+*.swp
+kahoku/
