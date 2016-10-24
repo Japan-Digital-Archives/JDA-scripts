@@ -1,8 +1,7 @@
-image_output/previous_resumption_token
-image_output/*.json
-image_output/*.jpg
-image_output/dup_list
+image_output/
+movie_output/
+othere_output/
+document_output/
 ../.DS_Store
 .DS_Store
 *.swp
-kahoku/

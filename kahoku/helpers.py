@@ -20,9 +20,9 @@ def handleNull(field):
 		field = field[0]
 	return field
 
-def saveResumptionToken(token, token_path):
+def saveResumptionToken(token, path):
 	if token:
-		with open(token_path, 'w+r') as f:
+		with open(path, 'w+r') as f:
 			print '****** (OVER)WRITING RESUMPTION TOKEN: ' + token[0] + ' ******'
   			f.truncate()
 		  	f.write(token[0])
