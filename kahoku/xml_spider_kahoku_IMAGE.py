@@ -32,7 +32,7 @@ class XmlSpider(BaseSpider):
 
     # Create URL to scrape
     template_url = 'http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set='
-    url          = template_url + category
+    url = template_url + category
 
     # Add resumption token if appropriate 
     tokenFileExists = os.path.exists(token_path)
@@ -47,20 +47,15 @@ class XmlSpider(BaseSpider):
   ################
   # Scraper Init #
   ################
-  # This is a dummy start_urls variable which will be overwriten in __init__
   name            = 'xmlscrape'
   allowed_domains = ['kahoku-archive.shinrokuden.irides.tohoku.ac.jp']
-  start_urls      = ['http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=P6EcZPbntF6_UERMqo0iRQ']
+  start_urls      = ['http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE']
+  #start_urls      = ['http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=5xum7v4o7-1B1JcK6WfGFg']
 
   ##############
   # Parse Feed #
   ##############
   def parse(self, response):
-
-    category    = getCAT()
-    output_path = self.PATH + category + '_output/'
-    token_path  = output_path + 'previous_resumption_token'
-    dup_path    = output_path + 'dup_list'
 
     #########
     # Setup #
@@ -68,11 +63,17 @@ class XmlSpider(BaseSpider):
     x = XmlXPathSelector(response)
     x.remove_namespaces()
     x.register_namespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#')
+
+    category     = getCAT()
+    output_path  = self.PATH + category + '_output/'
+    token_path   = output_path + 'previous_resumption_token'
+    dup_path     = output_path + 'dup_list'
     items        = []
     items        = x.select('//record/metadata/RDF')
     jsons        = []
     id_list      = []
     nextFileLink = ''
+
     resumption_token = x.select('//resumptionToken/text()').extract()
     saveResumptionToken(resumption_token, token_path)
 
@@ -82,41 +83,39 @@ class XmlSpider(BaseSpider):
     print '****** PARSING FILE... ******'
     for item in items:
 
+      ####################
+      ##### creator ######
+      ##### archive ######
+      #### layer_type ####
+      ####################
+      media_creator_username = 'Kahoku Shimpo Publishing Co.'
+      archive                = 'Kahoku Shimpo Disasters Archive'
+      layer_type             = 'Image' 
+
+      ####################
+      #### media_type ####
+      ####################
+      if category is 'MOVIE': media_type = 'Video'
+      if category is 'DOCUMENT': media_type = 'Headline'
+      else: media_type = 'Image'
+
       ######################
       # media_date_created #
       ######################
       media_date_created = item.select('Resource/created/text()').extract()
       media_date_created = handleNull(media_date_created)
 
-      #################
-      # response_date #
-      #################
-      response_date = item.select('Resource/responseDate/text()').extract()
-      response_date = handleNull(response_date)
-
-      ####################
-      ##### creator ######
-      ##### archive ######
-      #### media_type ####
-      #### layer_type ####
-      ####################
-      media_creator_username = 'Kahoku Shimpo Publishing Co.'
-      archive                = 'Kahoku Shimpo Disasters Archive'
-      media_type             = 'Image'
-      layer_type             = 'Image' 
-
       ##################
       #### abstract ####
       ##### title ######
       ##################
-      # Abstract tends to be more unique, though not always present. Title is often repetitive but more consistently filled.
+      # Abstract tends to be more unique, though not always present. Title is often repetitive but more consistently populated.
       abstract = item.select('Resource/abstract/text()').extract()
       title    = item.select('Resource/title/text()').extract()
       title    = handleNull(title)
       abstract = handleNull(abstract)
       abstract = abstract.replace('\r\n', '')
-      if not abstract:
-        abstract = title
+      if not abstract: abstract = title
 
       ###################
       #### unique_id ##### 
@@ -127,29 +126,36 @@ class XmlSpider(BaseSpider):
       id_list.append(unique_id)
 
       ####################
+      ###### Source ###### 
+      ####################
+      source = item.select('Resource/@rdf:about').extract()
+      source = handleNull(source)
+
+      ####################
       ####### URI ######## 
       ####################
       # Download image if it has not already been downloaded
-      uri = item.select('Resource/screen/Image/@rdf:about').extract()
-      downloaded = os.path.exists(output_path + unique_id + '.jpg')
-      if uri and not downloaded:
-        uri = uri[0]
-        urllib.urlretrieve(uri, output_path + unique_id + '.jpg')
-        uri = 'https://s3.amazonaws.com/JDA-Files/' + unique_id
-      else:
-        uri = handleNull(uri)
+      if category is 'IMAGE':
+      	uri = item.select('Resource/screen/Image/@rdf:about').extract()
+      	downloaded = os.path.exists(output_path + unique_id + '.jpg')
+      	if uri and not downloaded:
+      	  uri = uri[0]
+      	  urllib.urlretrieve(uri, output_path + unique_id + '.jpg')
+      	  uri = 'https://s3.amazonaws.com/JDA-Files/' + unique_id
+      
+      if category is 'MOVIE':
+      	uri = item.select('Resource/ogg/Image/@rdf:about').extract()
+	      
+      if category is 'DOCUMENT' or 'OTHER':
+      	uri = source
 
+      uri = handleNull(uri)
+					
       ####################
       #### Thumbnail ##### 
       ####################
       thumbnail_url = item.select('Resource/thumbnail/Image/@rdf:about').extract()
       thumbnail_url = handleNull(thumbnail_url)
-
-      ####################
-      ###### source ###### 
-      ####################
-      source = item.select('Resource/@rdf:about').extract()
-      source = handleNull(source)
 
       ####################
       ####### Tags ####### 
@@ -166,6 +172,7 @@ class XmlSpider(BaseSpider):
       region           = item.select('Resource/spatial/Description/region/text()').extract()
       locality         = item.select('Resource/spatial/Description/locality/text()').extract()
       street_address   = item.select('Resource/spatial/Description/street-address/text()').extract()
+
       if region or locality or street_address:
         region         = handleNull(region)
         locality       = handleNull(locality)
@@ -229,7 +236,7 @@ class XmlSpider(BaseSpider):
       # Duplicate Checker #
       #####################
       # Check for duplicates only in the "final-..." file since that is the only 
-      # file without a resumption token.
+      # file without a resumption token and thus can possibly contain duplicates.
       if not resumption_token and os.path.exists(dup_path):
         dup_list = open(dup_path, 'r').read()
         if unique_id not in dup_list:
@@ -241,8 +248,7 @@ class XmlSpider(BaseSpider):
     ######################
     # Save Item URI List #
     ######################
-    # Used for checking duplicates,
-    # will overwrite itself.
+    # Used for checking duplicates.
     with open(dup_path, 'w+r') as f:
       print '****** (OVER)WRITING DEDUP LIST ******'
       f.truncate() 
@@ -250,14 +256,21 @@ class XmlSpider(BaseSpider):
         print>>f, item
       f.close() 
 
-    #########
-    # Done? #
-    #########
+    ########
+    # Done #
+    ########
     if resumption_token == []:
+      print '****** DONE ******'
       nextFileLink = ""
-      open(output_path + 'final-' + getDateString() + '.json', 'wb').write(''.join(jsons).encode('UTF-8'))
+      path = output_path + 'final-' + getDateString() + '.json'
+      open(path, 'wb').write(''.join(jsons).encode('UTF-8'))
       #removeEmptyFiles(output_path)
-    else: # Or next job...
+
+    ###############
+    # Or Next Job #
+    ###############
+    else: 
       nextFileLink = 'http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=' + resumption_token[0].encode('ascii')
-      open(output_path + resumption_token[0].encode('ascii') + '.json', 'wb').write(''.join(jsons).encode('UTF-8'))
+      path = output_path + resumption_token[0].encode('ascii') + '.json'
+      open(path, 'wb').write(''.join(jsons).encode('UTF-8'))
       yield Request(nextFileLink, callback = self.parse)

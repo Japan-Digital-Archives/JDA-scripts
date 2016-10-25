@@ -18,9 +18,7 @@ def getCAT():
 		data = f.read()
 		return data
 		f.close()
-
-def rmCAT():
-	path = '/Users/horak/JDA-scripts/kahoku/output/category'
+	# Then remove in preparation for the next call
 	os.remove(path)
 
 def removeEmptyFiles(output_path):
