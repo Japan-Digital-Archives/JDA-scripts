@@ -28,27 +28,26 @@ if args.location not in legal:
 # Main #
 ########
 if args.location:
-	timestr    = time.strftime('%Y%m%d-%H%M%S')
-	read_path  = '/Users/horak/JDA-scripts/kahoku/' + args.location + '_output/'
-	result_path = read_path + 'combined-' + timestr + '.json'
+  timestr    = time.strftime('%Y%m%d-%H%M%S')
+  read_path  = '/Users/horak/JDA-scripts/kahoku/' + args.location + '_output/'
+  result_path = read_path + 'combined-' + timestr + '.json'
 
-	# Combine Files
-	read_files = glob.glob(read_path + '*.json')
-	with open(result_path, 'wb') as outfile:
-   outfile.write('{}'.format(
-     ' '.join([open(f, "rb").read() for f in read_files])))
+  # Combine Files
+  read_files = glob.glob(read_path + '*.json')
+  with open(result_path, 'wb') as outfile:
+    outfile.write('{}'.format(' '.join([open(f, "rb").read() for f in read_files])))
 	
-	# Prepend "Items" string
-	with file(result_path, 'r') as original: data = original.read()
-	with file(result_path, 'w') as modified: modified.write('{"items": [' + data)
+    # Prepend "Items" string
+    with file(result_path, 'r') as original: data = original.read()
+    with file(result_path, 'w') as modified: modified.write('{"items": [' + data)
 
-	# Remove hanging comma
-	with open(result_path, 'rb+') as modified:
-		modified.seek(-2, os.SEEK_END)
-		modified.truncate()
+    # Remove hanging comma
+    with open(result_path, 'rb+') as modified:
+      modified.seek(-2, os.SEEK_END)
+      modified.truncate()
 
-	# Append end of file formatting
-	with open(result_path, 'a') as modified: modified.write(']}')
+    # Append end of file formatting
+    with open(result_path, 'a') as modified: modified.write(']}')
 
 else:
   print 'Unpredicted error.'

@@ -11,35 +11,34 @@ from helpers import *
 
 class XmlSpider(BaseSpider):
 
-  ###############
-  # Blank Paths #
-  ###############
-  path        = '/Users/horak/JDA-scripts/kahoku/output/'
-  output_path = ''
-  dup_path    = ''
-  token_path  = ''
+  #############
+  # Set Path #
+  #############
+  PATH = '/Users/horak/JDA-scripts/kahoku/output/'
 
   ######################
   # Customimze Scraper #
   ######################
-  def __init__(self, category='', *a, **kw):
+  def __init__(self, cat='', *a, **kw):
     super(XmlSpider, self).__init__(*a, **kw)
+    
+    # Use category to determine which type of page to scrape (document, image, ...) 
+    category = cat
 
-    # Use category to setup scrape type (document, image, ...) 
-    category     = category
-    self.output_path  = self.path + category + '_output/'
-    self.dup_path     = self.output_path + 'dup_list'
-    self.token_path   = self.output_path + 'previous_resumption_token'
+    # Persist category type and set paths
+    setCAT(cat)
+    output_path = self.PATH + category + '_output/'
+    token_path  = output_path + 'previous_resumption_token'
 
     # Create URL to scrape
-    TEMPLATE_URL = 'http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set='
-    url          = TEMPLATE_URL + category
+    template_url = 'http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set='
+    url          = template_url + category
 
     # Add resumption token if appropriate 
-    tokenFileExists = os.path.exists(self.token_path)
-    finalFileExists = glob.glob(self.output_path + 'final*')
+    tokenFileExists = os.path.exists(token_path)
+    finalFileExists = glob.glob(output_path + 'final*')
     if tokenFileExists and not finalFileExists:
-      token = open(self.token_path, 'r').read()
+      token = open(token_path, 'r').read()
       url   = url + '&resumptionToken=' + token
       print '****** RESUMING WITH TOKEN: ' + token + ' ******' 
 
@@ -58,6 +57,11 @@ class XmlSpider(BaseSpider):
   ##############
   def parse(self, response):
 
+    category    = getCAT()
+    output_path = self.PATH + category + '_output/'
+    token_path  = output_path + 'previous_resumption_token'
+    dup_path    = output_path + 'dup_list'
+
     #########
     # Setup #
     #########
@@ -70,7 +74,7 @@ class XmlSpider(BaseSpider):
     id_list      = []
     nextFileLink = ''
     resumption_token = x.select('//resumptionToken/text()').extract()
-    saveResumptionToken(resumption_token, self.token_path)
+    saveResumptionToken(resumption_token, token_path)
 
     ###############
     # Parse Items #
@@ -127,10 +131,10 @@ class XmlSpider(BaseSpider):
       ####################
       # Download image if it has not already been downloaded
       uri = item.select('Resource/screen/Image/@rdf:about').extract()
-      downloaded = os.path.exists(self.output_path + unique_id + '.jpg')
+      downloaded = os.path.exists(output_path + unique_id + '.jpg')
       if uri and not downloaded:
         uri = uri[0]
-        urllib.urlretrieve(uri, self.output_path + unique_id + '.jpg')
+        urllib.urlretrieve(uri, output_path + unique_id + '.jpg')
         uri = 'https://s3.amazonaws.com/JDA-Files/' + unique_id
       else:
         uri = handleNull(uri)
@@ -226,8 +230,8 @@ class XmlSpider(BaseSpider):
       #####################
       # Check for duplicates only in the "final-..." file since that is the only 
       # file without a resumption token.
-      if not resumption_token and os.path.exists(self.dup_path):
-        dup_list = open(self.dup_path, 'r').read()
+      if not resumption_token and os.path.exists(dup_path):
+        dup_list = open(dup_path, 'r').read()
         if unique_id not in dup_list:
           jsons.append(json_entry)
       else:
@@ -239,7 +243,7 @@ class XmlSpider(BaseSpider):
     ######################
     # Used for checking duplicates,
     # will overwrite itself.
-    with open(self.dup_path, 'w+r') as f:
+    with open(dup_path, 'w+r') as f:
       print '****** (OVER)WRITING DEDUP LIST ******'
       f.truncate() 
       for item in id_list:
@@ -251,9 +255,9 @@ class XmlSpider(BaseSpider):
     #########
     if resumption_token == []:
       nextFileLink = ""
-      open(self.output_path + 'final-' + getDateString() + '.json', 'wb').write(''.join(jsons).encode('UTF-8'))
-      #removeEmptyFiles(self.output_path)
+      open(output_path + 'final-' + getDateString() + '.json', 'wb').write(''.join(jsons).encode('UTF-8'))
+      #removeEmptyFiles(output_path)
     else: # Or next job...
       nextFileLink = 'http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=' + resumption_token[0].encode('ascii')
-      open(self.output_path + resumption_token[0].encode('ascii') + '.json', 'wb').write(''.join(jsons).encode('UTF-8'))
+      open(output_path + resumption_token[0].encode('ascii') + '.json', 'wb').write(''.join(jsons).encode('UTF-8'))
       yield Request(nextFileLink, callback = self.parse)

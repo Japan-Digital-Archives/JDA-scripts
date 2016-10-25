@@ -1,7 +1,8 @@
 image_output/
 movie_output/
-othere_output/
+other_output/
 document_output/
+output/category
 ../.DS_Store
 .DS_Store
 *.swp

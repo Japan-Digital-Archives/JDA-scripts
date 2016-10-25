@@ -4,6 +4,25 @@
 
 import time, os
 
+def setCAT(cat):
+	path = '/Users/horak/JDA-scripts/kahoku/output/category'
+	with open(path, 'w+') as f:
+		print '****** SCRAPING ' + cat + 's *******'		
+		f.truncate()
+		f.write(cat)
+		f.close()
+
+def getCAT():
+	path = '/Users/horak/JDA-scripts/kahoku/output/category'
+	with open(path, 'r+') as f:
+		data = f.read()
+		return data
+		f.close()
+
+def rmCAT():
+	path = '/Users/horak/JDA-scripts/kahoku/output/category'
+	os.remove(path)
+
 def removeEmptyFiles(output_path):
 	for filename in os.listdir(output_path):
 		if os.stat(output_path + filename).st_size == 0:
