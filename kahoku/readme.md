@@ -1,5 +1,5 @@
 # Instructions for the Kahoku Shimpo API
-These instructions assume you are running python 2.7 on a unix OS.  
+*These instructions assume you are running python 2.7 on a unix OS.  
 
 ## Setup Scrapy
 1. Install Scrapy 0.18.
