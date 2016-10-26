@@ -1,11 +1,7 @@
-!image_output/.gitkeep
-!movie_output/.gitkeep
-!other_output/.gitkeep
-!document_output/.gitkeep
-image_output/
-movie_output/
-other_output/
-document_output/
+output/image_output/
+output/document_output/
+output/movie_output/
+output/other_output/
 output/.category
 ../.DS_Store
 .DS_Store
