@@ -2,8 +2,8 @@
 These instructions assume you are running python 2.7 on a unix OS.  
 
 ## Setup Scrapy
-1. Install Scrapy. 
-I'm using version 0.18. To get this version do the following:
+1. Install Scrapy 0.18.
+To get this version do the following:
 a. `git clone git://github.com/scrapy/scrapy.git`
 b. `cd scrapy`
 c. `git checkout 0.18`
@@ -14,10 +14,30 @@ The docs for this can be found [here](https://doc.scrapy.org/en/0.18/intro/tutor
 2. Setup `PATH` variable
 Make sure to go into the 
 
-## Run it
+## Manual Run
+Here is a run through of typical use.
+
+### Spider
+The spider takes an argument `TYPE`: `image`, `document`, `movie`, or `other`. 
 ```
-scrapy runspider xml_spider_kahoku_IMAGE.py
+scrapy runspider kahoku_spider.py -a cat=[TYPE]
 ```
+This call will populate the `[TYPE]_output` folder with scraped files, their title set to the date. This call will also generate `.resumptionToken`, `.dupList`, and `../.category` files which it uses to persists progress and such.
+
+### Combine files
+Once the spider has finished processing files, over multiple sessions, the resulting files can be combined and formatted into a single file formatted: `final-[DATE].json` with this call.
+```
+python combine.py -l other
+```
+Again, it takes commmand line arguments that match its type.
+
+
+
+## Cron
+- The cron is only run once a month considering how slowly new items are added.
+```
+
+``` 
 
 ## Item Types
  The Kahoku API can be configured to return 1 of 4 different data types, `IMAGE`, `DOCUMENT`, `MOVIE`, and `OTHER`, using the url structure below.
@@ -46,13 +66,7 @@ The Kahoku API exposes `from`, `to`, and `until`-date filtering url params which
 Asahi files contain both a higher res and thumbnail image. Following the Asahi precedent, the higher res image is downloaded for manual upload to S3 and the `uri` is linked to that future location on S3 by its ID. As with Asahi, this could be automated easily.
 
 ## Google Maps API
-- Google Maps is used to convert the `location` into `lat`/`long` coordinates. Right now, a free API key is being used that is rate limited. 
-
-## Cron
-- The cron is only run once a month considering how slowly new items are added.
-```
-
-``` 
+- Google Maps is used to convert the `location` into `lat`/`long` coordinates. Right now, a free API key is being used that is rate limited.
 
 ## Misc. Quirks
 - The same `title` attribute is often found for many items. I found the `abstract` attribute to be more unique, though often just an empty string. Thus, I default to that attribute and use `title` as a backup.
