@@ -30,11 +30,11 @@ def getDateString():
 	timestr = time.strftime('%Y%m%d-%H%M%S') 
 	return timestr
 
-def handleNull(field):
-	if not field:
-		field = ''
+# Returns a string and handles null 
+def processField(field):
+	if not field: field = ''
 	else:
-		field = field[0]
+		if isinstance(field, list): return field[0]
 	return field
 
 def saveResumptionToken(token, path):

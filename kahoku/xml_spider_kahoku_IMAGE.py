@@ -103,7 +103,7 @@ class XmlSpider(BaseSpider):
       # media_date_created #
       ######################
       media_date_created = item.select('Resource/created/text()').extract()
-      media_date_created = handleNull(media_date_created)
+      media_date_created = processField(media_date_created)
 
       ##################
       #### abstract ####
@@ -112,8 +112,8 @@ class XmlSpider(BaseSpider):
       # Abstract tends to be more unique, though not always present. Title is often repetitive but more consistently populated.
       abstract = item.select('Resource/abstract/text()').extract()
       title    = item.select('Resource/title/text()').extract()
-      title    = handleNull(title)
-      abstract = handleNull(abstract)
+      title    = processField(title)
+      abstract = processField(abstract)
       abstract = abstract.replace('\r\n', '')
       if not abstract: abstract = title
 
@@ -129,7 +129,7 @@ class XmlSpider(BaseSpider):
       ###### Source ###### 
       ####################
       source = item.select('Resource/@rdf:about').extract()
-      source = handleNull(source)
+      source = processField(source)
 
       ####################
       ####### URI ######## 
@@ -149,13 +149,11 @@ class XmlSpider(BaseSpider):
       if category is 'DOCUMENT' or 'OTHER':
       	uri = source
 
-      uri = handleNull(uri)
-					
       ####################
       #### Thumbnail ##### 
       ####################
       thumbnail_url = item.select('Resource/thumbnail/Image/@rdf:about').extract()
-      thumbnail_url = handleNull(thumbnail_url)
+      thumbnail_url = processField(thumbnail_url)
 
       ####################
       ####### Tags ####### 
@@ -174,9 +172,9 @@ class XmlSpider(BaseSpider):
       street_address   = item.select('Resource/spatial/Description/street-address/text()').extract()
 
       if region or locality or street_address:
-        region         = handleNull(region)
-        locality       = handleNull(locality)
-        street_address = handleNull(street_address)
+        region         = processField(region)
+        locality       = processField(locality)
+        street_address = processField(street_address)
         locationTemp   = [street_address, locality, region]
         location       = ''
 
@@ -245,10 +243,10 @@ class XmlSpider(BaseSpider):
         jsons.append(json_entry)
 
 
-    ######################
-    # Save Item URI List #
-    ######################
-    # Used for checking duplicates.
+    ###################
+    # Save Duplicates #
+    ###################
+    # Save Item URI List
     with open(dup_path, 'w+r') as f:
       print '****** (OVER)WRITING DEDUP LIST ******'
       f.truncate() 
