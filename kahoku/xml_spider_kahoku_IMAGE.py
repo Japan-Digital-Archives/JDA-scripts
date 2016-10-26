@@ -95,9 +95,9 @@ class XmlSpider(BaseSpider):
       ####################
       #### media_type ####
       ####################
-      if category is 'MOVIE': media_type = 'Video'
-      if category is 'DOCUMENT': media_type = 'Headline'
-      else: media_type = 'Image'
+      if category == 'MOVIE': media_type = 'Video'
+      if category == 'DOCUMENT' or category == 'OTHER': media_type = 'Headline'
+      if category == 'IMAGE': media_type = 'Image'
 
       ######################
       # media_date_created #
@@ -135,7 +135,7 @@ class XmlSpider(BaseSpider):
       ####### URI ######## 
       ####################
       # Download image if it has not already been downloaded
-      if category is 'IMAGE':
+      if category == 'IMAGE':
       	uri = item.select('Resource/screen/Image/@rdf:about').extract()
       	downloaded = os.path.exists(output_path + unique_id + '.jpg')
       	if uri and not downloaded:
@@ -143,11 +143,13 @@ class XmlSpider(BaseSpider):
       	  urllib.urlretrieve(uri, output_path + unique_id + '.jpg')
       	  uri = 'https://s3.amazonaws.com/JDA-Files/' + unique_id
       
-      if category is 'MOVIE':
+      if category == 'MOVIE':
       	uri = item.select('Resource/ogg/Image/@rdf:about').extract()
 	      
-      if category is 'DOCUMENT' or 'OTHER':
+      if category == 'DOCUMENT' or category == 'OTHER':
       	uri = source
+
+      uri = processField(uri)
 
       ####################
       #### Thumbnail ##### 
@@ -181,11 +183,11 @@ class XmlSpider(BaseSpider):
         # Handles comma location and attribute existence variability
         for item in locationTemp:
           if item:
-            if location is '':
+            if location == '':
               location = location + item
             else:
               location = location + ', ' + item
-        if location[location.__len__()-1] is ',':
+        if location[location.__len__()-1] == ',':
           location = location[:-1]
       else:
         location = ''
@@ -262,7 +264,7 @@ class XmlSpider(BaseSpider):
       nextFileLink = ""
       path = output_path + 'final-' + getDateString() + '.json'
       open(path, 'wb').write(''.join(jsons).encode('UTF-8'))
-      #removeEmptyFiles(output_path)
+      removeEmptyFiles(output_path)
 
     ###############
     # Or Next Job #
