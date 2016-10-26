@@ -11,10 +11,12 @@ from helpers import *
 
 class XmlSpider(BaseSpider):
 
-  #############
-  # Set Path #
-  #############
-  PATH = '/Users/horak/JDA-scripts/kahoku/output/'
+  ##############
+  # IMPORTANT! #
+  ## Set Path ##
+  ##############
+  PATH         = '/Users/horak/JDA-scripts/kahoku/output/'
+  template_url = 'http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set='
 
   ######################
   # Customimze Scraper #
@@ -22,22 +24,20 @@ class XmlSpider(BaseSpider):
   def __init__(self, cat='', *a, **kw):
     super(XmlSpider, self).__init__(*a, **kw)
     
-    # Use category to determine which type of page to scrape (document, image, ...) 
-    category = cat
+    # Use category arg to determine which type of page to scrape (document, image, ...) 
+    category = cat.upper()
 
     # Persist category type and set paths
     setCAT(cat)
-    output_path = self.PATH + category + '_output/'
-    token_path  = output_path + 'previous_resumption_token'
+    output_path = self.PATH + category.lower() + '_output/'
+    token_path  = output_path + '.previous_resumption_token'
 
     # Create URL to scrape
-    template_url = 'http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set='
-    url = template_url + category
+    url = self.template_url + category
 
-    # Add resumption token if appropriate 
+    # Continue scraping where we left off (if we did)
     tokenFileExists = os.path.exists(token_path)
-    finalFileExists = glob.glob(output_path + 'final*')
-    if tokenFileExists and not finalFileExists:
+    if tokenFileExists:
       token = open(token_path, 'r').read()
       url   = url + '&resumptionToken=' + token
       print '****** RESUMING WITH TOKEN: ' + token + ' ******' 
@@ -50,7 +50,6 @@ class XmlSpider(BaseSpider):
   name            = 'xmlscrape'
   allowed_domains = ['kahoku-archive.shinrokuden.irides.tohoku.ac.jp']
   start_urls      = ['http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE']
-  #start_urls      = ['http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=5xum7v4o7-1B1JcK6WfGFg']
 
   ##############
   # Parse Feed #
@@ -65,12 +64,13 @@ class XmlSpider(BaseSpider):
     x.register_namespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#')
 
     category     = getCAT()
-    output_path  = self.PATH + category + '_output/'
-    token_path   = output_path + 'previous_resumption_token'
-    dup_path     = output_path + 'dup_list'
+    category     = category.upper()
+    output_path  = self.PATH + category.lower() + '_output/'
+    token_path   = output_path + '.previous_resumption_token'
+    dup_path     = output_path + '.dup_list'
     items        = []
     items        = x.select('//record/metadata/RDF')
-    jsons        = []
+    result       = []
     id_list      = []
     nextFileLink = ''
 
@@ -109,20 +109,21 @@ class XmlSpider(BaseSpider):
       #### abstract ####
       ##### title ######
       ##################
-      # Abstract tends to be more unique, though not always present. Title is often repetitive but more consistently populated.
       abstract = item.select('Resource/abstract/text()').extract()
       title    = item.select('Resource/title/text()').extract()
       title    = processField(title)
       abstract = processField(abstract)
       abstract = abstract.replace('\r\n', '')
+
+      # Abstract tends to be more unique, though not always there. Title is often repetitive but more consistently present.
       if not abstract: abstract = title
 
       ###################
       #### unique_id ##### 
       ###################
-      # Used for de-duping
       unique_id = item.select('Resource/identifier/text()').extract()
       unique_id = str(unique_id[0])
+      # Used for de-duping
       id_list.append(unique_id)
 
       ####################
@@ -195,7 +196,7 @@ class XmlSpider(BaseSpider):
       ##########################
       ######## Lat/Long ########
       ##########################
-      # Uses Google Maps
+      # Find coordinates using Google Maps API
       lat = '' 
       lng = ''
       if location != '':
@@ -236,13 +237,14 @@ class XmlSpider(BaseSpider):
       # Duplicate Checker #
       #####################
       # Check for duplicates only in the "final-..." file since that is the only 
-      # file without a resumption token and thus can possibly contain duplicates.
+      # file without a resumption token and thus could possibly contain duplicates.
       if not resumption_token and os.path.exists(dup_path):
         dup_list = open(dup_path, 'r').read()
         if unique_id not in dup_list:
-          jsons.append(json_entry)
+          print 'not in dup'
+          result.append(json_entry)
       else:
-        jsons.append(json_entry)
+        result.append(json_entry)
 
 
     ###################
@@ -256,21 +258,23 @@ class XmlSpider(BaseSpider):
         print>>f, item
       f.close() 
 
-    ########
-    # Done #
-    ########
+    ###########
+    # If Done #
+    ###########
     if resumption_token == []:
       print '****** DONE ******'
       nextFileLink = ""
       path = output_path + 'final-' + getDateString() + '.json'
-      open(path, 'wb').write(''.join(jsons).encode('UTF-8'))
+      open(path, 'wb').write(''.join(result).encode('UTF-8'))
       removeEmptyFiles(output_path)
 
     ###############
     # Or Next Job #
     ###############
     else: 
-      nextFileLink = 'http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=' + resumption_token[0].encode('ascii')
-      path = output_path + resumption_token[0].encode('ascii') + '.json'
-      open(path, 'wb').write(''.join(jsons).encode('UTF-8'))
+      url          = self.template_url + category + '&resumptionToken='
+      nextFileLink = url + resumption_token[0].encode('ascii')
+      path         = output_path + resumption_token[0].encode('ascii') + '.json'
+
+      open(path, 'wb').write(''.join(result).encode('UTF-8'))
       yield Request(nextFileLink, callback = self.parse)

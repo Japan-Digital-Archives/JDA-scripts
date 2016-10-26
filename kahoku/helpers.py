@@ -4,22 +4,30 @@
 
 import time, os
 
+##############
+# IMPORTANT! #
+## Set Path ##
+##############
+global PATH
+PATH = '/Users/horak/JDA-scripts/kahoku/output/.category'
+
+# Sets the category type
 def setCAT(cat):
-	path = '/Users/horak/JDA-scripts/kahoku/output/category'
-	with open(path, 'w+') as f:
+	global PATH
+	with open(PATH, 'w+') as f:
 		print '****** SCRAPING ' + cat + 's *******'		
 		f.truncate()
 		f.write(cat)
 		f.close()
 
+# Returns and removes category type
 def getCAT():
-	path = '/Users/horak/JDA-scripts/kahoku/output/category'
-	with open(path, 'r+') as f:
+	global PATH
+	with open(PATH, 'r+') as f:
 		data = f.read()
 		return data
 		f.close()
-	# Then remove in preparation for the next call
-	os.remove(path)
+	os.remove(PATH) # Then remove in preparation for the next call
 
 def removeEmptyFiles(output_path):
 	for filename in os.listdir(output_path):

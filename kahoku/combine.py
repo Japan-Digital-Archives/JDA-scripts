@@ -5,9 +5,10 @@
 ###########
 import glob, sys, argparse, time, os, fnmatch
 
-########
-# Path #
-########
+##############
+# IMPORTANT! #
+## Set Path ##
+##############
 PATH = '/Users/horak/JDA-scripts/kahoku/output/'
 
 #######
@@ -15,7 +16,7 @@ PATH = '/Users/horak/JDA-scripts/kahoku/output/'
 #######
 p = argparse.ArgumentParser(description='combine.py')
 p.add_argument('-l', dest='location')
-args = p.parse_args()
+args  = p.parse_args()
 legal = ['image', 'document', 'movie', 'other']
 
 #################
@@ -34,8 +35,8 @@ if args.location not in legal:
 ########
 if args.location:
   timestr     = time.strftime('%Y%m%d-%H%M%S')
-  folder_path   = PATH + args.location.upper() + '_output/'
-  file_path = folder_path + 'combined-' + timestr + '.json'
+  folder_path = PATH + args.location.upper() + '_output/'
+  file_path   = folder_path + 'combined-' + timestr + '.json'
 
   # Combine Files
   read_files = glob.glob(folder_path + '*.json')
