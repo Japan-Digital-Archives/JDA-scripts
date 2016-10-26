@@ -13,7 +13,7 @@
 Make sure to change the `PATH` variables in `kahoku_spider.py`, `helpers.py`, and `combine.py` and to suit your environment.
 
 3. Google Maps API
-Google Maps is used to populate the `lat`/`long` coordinates. Right now, a free API key is being used that is rate limited. *YOU WILL NEED TO UPLOAD A NEW API KEY THAT IS NOT RATE LIMITED IN ORDER TO DOWNLOAD FILES CONTINUOUSLY* IF you do not do this, `lat` and `lng` will silently be assigned `null`.
+Google Maps is used to populate the `lat`/`long` coordinates. Right now, a free API key is being used that is rate limited. *YOU WILL NEED TO UPLOAD A NEW API KEY THAT IS NOT RATE LIMITED IN ORDER TO DOWNLOAD FILES CONTINUOUSLY.* IF you do not do this, `lat`/`long` will silently be assigned `null`.
 
 
 ## Manual Run 
@@ -24,18 +24,18 @@ The spider takes an argument `TYPE`: `image`, `document`, `movie`, or `other`.
 ```
 $ scrapy runspider kahoku_spider.py -a cat=[TYPE]
 ```
-This call will populate the `output/[TYPE]_output` folder with scraped files, their title set to the date. This call will also generate `.resumptionToken`, `.dupList`, and `../.category` files which it uses to persists progress and such. **T reset things while debugging you will need to delete all three of these files.**
+This call will populate the `output/[TYPE]_output` folder with scraped files, their title set to the date. This call will also generate `.resumptionToken`, `.dupList`, and `../.category` files which it uses to persists progress and such. **To reset things while debugging you will need to delete all three of these files.**
 
 ### Combine Files
 Once the spider has finished processing files, over multiple sessions, the resulting files can be combined and formatted into a single file `final-[DATE].json`.
-```
+```bash
 $ python combine.py -l other
 ```
 Again, it takes commmand line arguments that match its type.
 
 
 ## Cron Jobs
-Following these instructions should leave you with a single, consolidated JSON file in each respective output directory, along with JPEGs if applicable. 
+Following these instructions should leave you with a single, consolidated JSON file in each respective output directory, along with any downloaded images if applicable. 
 
 Start the crontab with:
 ```
@@ -74,20 +74,24 @@ A request will often yield too many documents for a single response. If more tha
 ```
 http://kahoku-archive.shinrokuden.irides.tohoku.ac.jp/webapi/oaipmh?verb=ListRecords&metadataPrefix=sdn&set=IMAGE&resumptionToken=5xum7v4o7-1B1JcK6WfGFg
 ```
-Importantly, these resumption tokens act as unique identifiers for requests previously made (and thus items procssed and downloaded). Each time a request is made, the resumptionToken is stored in the `\.previous_resumption_token` file (untracked). When another request is made, the scrapper will pickup where it last left off. **Thus, to start scrapping from the beginning of the archive, erase `\previous_resumption_token`.** A JSON response to the request is stored in `[resumption token will be here].json`
+Importantly, these resumption tokens act as unique identifiers for requests previously made (and thus items processed and downloaded). Each time a request is made, the resumptionToken is stored in the `output/[TYPE]_output/.previous_resumption_token` file (untracked). When another request is made, the scrapper will pick up where it last left off. **Thus, to start scrapping from the beginning of the archive, erase `output/[TYPE]_output/.previous_resumption_token`.**
 
 When the scrapper reaches the last of the requests' items the response no longer includes a `resumptionToken` and will instead create a file called `final-[datetime].json`. Unfortunately, because the that response yields no unique identifier, files scraped from the last call need to be de-duplicated.
 
-### De-deduplication
-The final response page is not given a `resumptionToken`. I have assumed that this page's items can change, namely, that new items can be added. As such, the files in `final-[datetime].json` are need to be de-duped. The final page's item ID's are stored in `.dup_list`. If a scrape yields empty files, they are deleted automatically. 
+### De-duplication
+The final response page is not given a `resumptionToken`. I have assumed that only this page's items can change, namely, that new items can be added over time. As such, the files in `final-[datetime].json` need to be de-duped. The final page's item ID's are stored in `.dup_list`. 
 
-### Why Use Resumption Tokens for State Storage?
-The Kahoku API (included in repo) exposes `from`, `to`, and `until`-date filtering url params which would at first glance seem to make for a better option, but unfortuantely these are limited to only `date_modified` (as far as I could tell).
+If a scrape yields empty files, they are deleted automatically. 
+
+### Why Use Resumption Tokens as placeholders?
+The Kahoku API (included in repo) exposes `from`, `to`, and `until`-date filtering url params which would at first glance seem to make for a better route, but unfortuantely these are limited to only `date_modified`, as opposed to date_uploaded, which the resumption token provides incidentally. 
 
 ### Images
-Asahi files contain both a higher resolution image and thumbnail image. Following Asahi precedent, the higher resolution image is downloaded for manual upload to S3 and the `uri` is linked to that future location on S3 by its ID. As with Asahi, this could be automated easily.
+Items contain both a higher resolution image and thumbnail image. Following Asahi precedent, the higher resolution image is downloaded for manual upload to S3 and the `uri` is linked to that future location on S3 by its ID. As with Asahi, this could be automated easily.
 
 ### Misc. Quirks
-- The same `title` attribute is often found for many items. I found the `abstract` attribute to be more unique, though often just an empty string. Thus, I default to that attribute and use `title` as a backup.
-- Both the `attribution_uri` and `uri` are populated using the same source field: `Resource/screen/Image/@rdf:about` in instances where no other uri existed. This is a precedent I am following blindly, as I'm unsure of its origin. 
+- The same `title` attribute is often found for many items. I found the `abstract` attribute to be more unique, though it is often just an empty string. Thus, I default to that attribute and use `title` as a backup.
+
+- Both the `attribution_uri` and `uri` are populated using the same source field: `Resource/screen/Image/@rdf:about`, in instances where no other uri existed. This is another Asahi precedent I am following blindly.
+
 - Both `layer_type` and `media_type` follow a similar precedent and should probably be overwritten. 
